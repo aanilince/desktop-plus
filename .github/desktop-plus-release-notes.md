@@ -1,5 +1,8 @@
 Desktop Plus v3.6.7-beta2
 
+> [!NOTE]
+> This release is a hotfix for [v3.6.7-beta2 - RC1](https://github.com/desktop-plus/desktop-plus/releases/tag/v3.6.7.0).
+
 Upstream:
 - [GitHub Desktop 3.6.7-beta1 release notes](https://github.com/desktop/desktop/releases/tag/release-3.6.7-beta1)
 - [GitHub Desktop 3.6.7-beta2 release notes](https://github.com/desktop/desktop/releases/tag/release-3.6.7-beta2)
