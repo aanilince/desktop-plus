@@ -12,6 +12,7 @@ import {
   getDistRoot,
   getExecutableName,
 } from './dist-info'
+import { assertRelocatableSymlinks } from './verify-symlinks'
 
 const APPIMAGETOOL_VERSION = '1.9.1'
 
@@ -132,6 +133,7 @@ export async function packageAppImage(): Promise<string> {
   try {
     console.log('Creating AppDir…')
     await createAppDir(appDir, executableName)
+    assertRelocatableSymlinks(appDir)
 
     await downloadAppImageTool(appImageTool)
 

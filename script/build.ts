@@ -69,6 +69,7 @@ import assert from 'assert'
 import { copyCopilotDependency } from './copilot'
 import { removeCurlVersionRequirements } from './remove-curl-version-requirements'
 import { pruneCopilotDependency } from './copilot-prune'
+import { assertRelocatableSymlinks } from './verify-symlinks'
 
 // Always use ad-hoc code signing ('-'), even for published builds, to avoid "app is damaged" error.
 // This is the friendliest non-paid option.
@@ -141,6 +142,13 @@ verifyInjectedSassVariables(outRoot)
 
     console.log('Packaging…')
     return packageApp()
+  })
+  .then(appPaths => {
+    console.log('Verifying symlinks…')
+    for (const appPath of appPaths) {
+      assertRelocatableSymlinks(appPath)
+    }
+    return appPaths
   })
   .catch(err => {
     console.error(err)
@@ -216,7 +224,10 @@ async function packageApp() {
     dir: outRoot,
     overwrite: true,
     tmpdir: false,
-    derefSymlinks: false,
+    // Windows' git has no symlinks to preserve, and patch-package (which makes
+    // the packager keep symlinks relative) doesn't run there.
+    // TODO: Make this 'false' once https://github.com/electron/packager/pull/1964 is merged and released.
+    derefSymlinks: process.platform === 'win32',
     prune: false, // We'll prune them ourselves below.
     // @electron/get re-downloads SHASUMS256.txt on every run, even when the
     // Electron zip is already in its cache, so validating it would defeat the

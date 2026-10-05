@@ -125,7 +125,9 @@ findYarnVersion(path => {
     )
   }
 
-  if (process.platform === 'linux') {
+  // electron-installer-redhat isn't installed on Windows (its package.json
+  // restricts `os` to darwin and linux), so patch-package would fail there.
+  if (process.platform !== 'win32') {
     result = spawnSync('node', getYarnArgs([path, 'patch-package']), options)
 
     if (result.status !== 0) {
