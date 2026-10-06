@@ -165,6 +165,13 @@ export interface ITooltipProps<T> {
 
   /** Whether to show the tooltip when the target is focused */
   readonly disabled?: boolean
+
+  /**
+   * Restricts mouse hover to the target's descendants matching this selector.
+   * Focus then only opens the tooltip when keyboard-initiated, since a click
+   * anywhere on the target would otherwise bypass the restriction.
+   */
+  readonly hoverTargetSelector?: string
 }
 
 interface ITooltipState {
@@ -388,6 +395,9 @@ export class Tooltip<T extends TooltipTarget> extends React.Component<
 
     const { ancestorFocused } = this.props
     if (ancestorFocused === true) {
+      if (!this.isFocusAllowedToShow(document.activeElement)) {
+        return
+      }
       this.beginShowTooltip()
     } else if (ancestorFocused === false) {
       this.beginHideTooltip()
@@ -445,6 +455,10 @@ export class Tooltip<T extends TooltipTarget> extends React.Component<
   private onTargetMouseEnter = (event: MouseEvent) => {
     this.updateMouseRect(event)
 
+    if (!this.isPointerOverHoverTarget(event)) {
+      return
+    }
+
     this.mouseOverTarget = true
     this.cancelHideTooltip()
     if (!this.state.show) {
@@ -454,6 +468,42 @@ export class Tooltip<T extends TooltipTarget> extends React.Component<
 
   private onTargetMouseMove = (event: MouseEvent) => {
     this.updateMouseRect(event)
+    this.updateMouseOverHoverTarget(event)
+  }
+
+  private isPointerOverHoverTarget(event: MouseEvent) {
+    const { hoverTargetSelector } = this.props
+    if (hoverTargetSelector === undefined) {
+      return true
+    }
+
+    const match =
+      event.target instanceof Element
+        ? event.target.closest(hoverTargetSelector)
+        : null
+    return match !== null && this.state.target?.contains(match) === true
+  }
+
+  // mouseenter/mouseleave don't fire when moving between descendants
+  private updateMouseOverHoverTarget(event: MouseEvent) {
+    if (this.props.hoverTargetSelector === undefined) {
+      return
+    }
+
+    const overHoverTarget = this.isPointerOverHoverTarget(event)
+    if (overHoverTarget && !this.mouseOverTarget) {
+      this.onTargetMouseEnter(event)
+    } else if (!overHoverTarget && this.mouseOverTarget) {
+      this.onTargetMouseLeave(event)
+    }
+  }
+
+  private isFocusAllowedToShow(focused: EventTarget | null) {
+    if (this.props.hoverTargetSelector === undefined) {
+      return true
+    }
+
+    return focused instanceof Element && focused.matches(':focus-visible')
   }
 
   private onTargetMouseDown = (event: MouseEvent) => {
@@ -490,6 +540,10 @@ export class Tooltip<T extends TooltipTarget> extends React.Component<
    * focus does not.
    */
   private onTargetFocusIn = (event: FocusEvent) => {
+    if (!this.isFocusAllowedToShow(event.target)) {
+      return
+    }
+
     if (this.props.openOnFocus) {
       this.beginShowTooltip()
     }

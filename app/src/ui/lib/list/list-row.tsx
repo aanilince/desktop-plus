@@ -127,6 +127,8 @@ interface IListRowProps {
     indexPath: RowIndexPath
   ) => JSX.Element | string | null
 
+  readonly rowFocusTooltipHoverTargetSelector?: string
+
   /**
    * Used in conjunction with the above renderRowFocus to communicate keyboard
    * focus This must be provided if providing a tooltip on a the list row as it
@@ -164,6 +166,7 @@ export class ListRow extends React.Component<IListRowProps, {}> {
         target={this.listItemRef}
         openOnFocus={true}
         positionRelativeToTarget={true}
+        hoverTargetSelector={this.props.rowFocusTooltipHoverTargetSelector}
         delay={this.props.hasKeyboardFocus ? 1000 : undefined}
         tooltipOffset={
           new DOMRect(

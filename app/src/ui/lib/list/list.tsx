@@ -348,6 +348,8 @@ interface IListProps {
   readonly renderRowFocusTooltip?: (
     indexPath: RowIndexPath
   ) => JSX.Element | string | null
+
+  readonly rowFocusTooltipHoverTargetSelector?: string
 }
 
 interface IListState {
@@ -1223,6 +1225,9 @@ export class List extends React.Component<IListProps, IListState> {
           className={customClasses}
           hasKeyboardFocus={this.focusRow === rowIndex}
           renderRowFocusTooltip={this.props.renderRowFocusTooltip}
+          rowFocusTooltipHoverTargetSelector={
+            this.props.rowFocusTooltipHoverTargetSelector
+          }
         />
       )
     }

@@ -38,6 +38,8 @@ import * as octicons from '../octicons/octicons.generated'
 
 const RowHeight = 50
 
+const RowFocusTooltipHoverTargetSelector = '.AvatarStack, .byline .authors'
+
 export interface ICommitListItemRenderProps {
   readonly row: number
   readonly commit: Commit
@@ -750,6 +752,9 @@ export class CommitList extends React.Component<
             this.props.disableRowFocusTooltip === true
               ? undefined
               : this.renderRowFocusTooltip
+          }
+          rowFocusTooltipHoverTargetSelector={
+            RowFocusTooltipHoverTargetSelector
           }
         />
         <AriaLiveContainer message={this.state.reorderingMessage} />
