@@ -604,6 +604,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.resizeActiveResizable('decrease-active-resizable-width')
       case 'toggle-changes-filter':
         return this.toggleChangesFilterVisibility()
+      case 'toggle-view-mode-switches':
+        return this.props.dispatcher.toggleViewModeSwitchesVisibility()
       default:
         if (isTestMenuEvent(name)) {
           return showTestUI(
@@ -4454,6 +4456,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           showDiffMinimap={state.showDiffMinimap}
           wrapDiffLines={state.wrapDiffLines}
           fileTreeView={state.fileTreeView}
+          showViewModeSwitches={state.showViewModeSwitches}
           focusCommitMessage={state.focusCommitMessage}
           askForConfirmationOnDiscardChanges={
             state.askForConfirmationOnDiscardChanges

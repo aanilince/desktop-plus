@@ -2808,6 +2808,11 @@ export class Dispatcher {
     return this.appStore._setFileTreeView(fileTreeView)
   }
 
+  /** Show or hide the list/tree and list/graph view mode switches */
+  public toggleViewModeSwitchesVisibility() {
+    this.appStore._toggleViewModeSwitchesVisibility()
+  }
+
   /** Install the global Git LFS filters. */
   public installGlobalLFSFilters(force: boolean): Promise<void> {
     return this.appStore._installGlobalLFSFilters(force)

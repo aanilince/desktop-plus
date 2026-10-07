@@ -83,6 +83,7 @@ interface ICommitGraphSidebarProps {
   readonly accounts: ReadonlyArray<Account>
   readonly preferAbsoluteDates: boolean
   readonly showConventionalCommitBadges: boolean
+  readonly showViewModeSwitches: boolean
 }
 
 interface ICommitGraphSidebarState {
@@ -625,6 +626,10 @@ export class CommitGraphSidebar extends React.Component<
   }
 
   private commitGraph_renderViewModeSwitch() {
+    if (!this.props.showViewModeSwitches) {
+      return null
+    }
+
     return (
       <div className="commitGraph-view-mode-switch view-mode-switch button-group">
         <Button

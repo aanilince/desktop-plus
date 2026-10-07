@@ -59,6 +59,9 @@ interface IRepositoryViewProps {
   readonly showDiffMinimap: boolean
   readonly wrapDiffLines: boolean
   readonly fileTreeView: boolean
+
+  /** Whether the list/tree and list/graph view mode switches are shown */
+  readonly showViewModeSwitches: boolean
   readonly showDiffCheckMarks: boolean
   readonly preferAbsoluteDates: boolean
   readonly showConventionalCommitBadges: boolean
@@ -400,6 +403,7 @@ export class RepositoryView extends React.Component<
         showCommitAuthorInfo={this.props.showCommitAuthorInfo}
         showChangesFilter={this.props.showChangesFilter}
         fileTreeView={this.props.fileTreeView}
+        showViewModeSwitches={this.props.showViewModeSwitches}
         skipCommitHooks={this.props.skipCommitHooks}
         signOffCommits={this.props.signOffCommits}
         allowEmptyCommit={this.props.allowEmptyCommit}
@@ -464,6 +468,7 @@ export class RepositoryView extends React.Component<
         isMultiCommitOperationInProgress={mcos !== null}
         preferAbsoluteDates={this.props.preferAbsoluteDates}
         showConventionalCommitBadges={this.props.showConventionalCommitBadges}
+        showViewModeSwitches={this.props.showViewModeSwitches}
         askForConfirmationOnCheckoutCommit={
           this.props.askForConfirmationOnCheckoutCommit
         }

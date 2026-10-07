@@ -264,6 +264,7 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
     'open-with-external-editor',
     'compare-to-branch',
     'toggle-changes-filter',
+    'toggle-view-mode-switches',
     'create-worktree',
   ]
 

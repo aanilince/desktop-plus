@@ -56,6 +56,7 @@ export function buildDefaultMenuTemplate({
   gitHubRepositoryType,
   gitHubRepositoryEndpoint,
   isChangesFilterVisible = true,
+  isViewModeSwitchesVisible = true,
 }: MenuLabelsEvent): Electron.MenuItemConstructorOptions[] {
   contributionTargetDefaultBranch = truncateWithEllipsis(
     contributionTargetDefaultBranch,
@@ -267,6 +268,13 @@ export function buildDefaultMenuTemplate({
         id: 'toggle-changes-filter',
         accelerator: 'CmdOrCtrl+L',
         click: emit('toggle-changes-filter'),
+      },
+      {
+        label: `${
+          isViewModeSwitchesVisible ? 'Hide' : 'Show'
+        } View-Mode Toggles`,
+        id: 'toggle-view-mode-switches',
+        click: emit('toggle-view-mode-switches'),
       },
       {
         label: __DARWIN__ ? 'Toggle Full Screen' : 'Toggle &full screen',

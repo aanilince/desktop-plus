@@ -54,6 +54,7 @@ export type MenuEvent =
   | 'decrease-active-resizable-width'
   | 'increase-active-resizable-width'
   | 'toggle-changes-filter'
+  | 'toggle-view-mode-switches'
   | TestMenuEvent
 
 /**

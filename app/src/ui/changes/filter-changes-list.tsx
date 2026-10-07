@@ -257,6 +257,9 @@ interface IFilterChangesListProps {
   /** Whether the list of changed files is shown as a tree */
   readonly fileTreeView: boolean
 
+  /** Whether the list/tree view mode switch is shown */
+  readonly showViewModeSwitches: boolean
+
   /**
    * Whether or not to skip blocking commit hooks when creating commits
    * by means of passing the `--no-verify` flag to git commit
@@ -776,6 +779,10 @@ export class FilterChangesList extends React.Component<
   }
 
   private renderTreeViewToggle() {
+    if (!this.props.showViewModeSwitches) {
+      return null
+    }
+
     return (
       <FileTreeViewToggle
         treeView={this.props.fileTreeView}

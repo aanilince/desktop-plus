@@ -78,4 +78,10 @@ export type MenuLabelsEvent = {
    * says "Show changes filter" or "Hide changes filter".
    */
   readonly isChangesFilterVisible?: boolean
+
+  /**
+   * Whether or not the view mode switches (list/tree in the Changes tab,
+   * list/graph in the History tab) are visible.
+   */
+  readonly isViewModeSwitchesVisible?: boolean
 }

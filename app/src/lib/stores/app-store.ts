@@ -686,6 +686,9 @@ const selectedCopilotModelsKey = 'selected-copilot-models'
 const selectedCopilotModelsByAccountKey = 'selected-copilot-models-by-account'
 export const showChangesFilterDefault = true
 
+const showViewModeSwitchesKey = 'show-view-mode-switches'
+const showViewModeSwitchesDefault = true
+
 export class AppStore extends TypedBaseStore<IAppState> {
   private readonly gitStoreCache: GitStoreCache
 
@@ -784,6 +787,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private showDiffMinimap: boolean = ShowDiffMinimapDefault
   private wrapDiffLines: boolean = WrapDiffLinesDefault
   private fileTreeView: boolean = false
+  private showViewModeSwitches: boolean = showViewModeSwitchesDefault
 
   private uncommittedChangesStrategy = defaultUncommittedChangesStrategy
 
@@ -1507,6 +1511,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showDiffMinimap: this.showDiffMinimap,
       wrapDiffLines: this.wrapDiffLines,
       fileTreeView: this.fileTreeView,
+      showViewModeSwitches: this.showViewModeSwitches,
       selectedShell: this.selectedShell,
       repositoryFilterText: this.repositoryFilterText,
       resolvedExternalEditor: this.resolvedExternalEditor,
@@ -3208,6 +3213,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.showDiffMinimap = getShowDiffMinimap()
     this.wrapDiffLines = getWrapDiffLines()
     this.fileTreeView = getFileTreeView()
+    this.showViewModeSwitches = getBoolean(
+      showViewModeSwitchesKey,
+      showViewModeSwitchesDefault
+    )
 
     this.selectedTheme = getPersistedThemeName()
     // Make sure the persisted theme is applied
@@ -3586,6 +3595,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       gitHubRepositoryEndpoint: isGitHub
         ? selectedRepository.gitHubRepository.endpoint
         : null,
+      isViewModeSwitchesVisible: this.showViewModeSwitches,
     }
 
     if (state === null) {
@@ -9397,6 +9407,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this.fileTreeView = fileTreeView
       this.emitUpdate()
     }
+  }
+
+  public _toggleViewModeSwitchesVisibility() {
+    this.showViewModeSwitches = !this.showViewModeSwitches
+    setBoolean(showViewModeSwitchesKey, this.showViewModeSwitches)
+    this.updateMenuLabelsForSelectedRepository()
+    this.emitUpdate()
   }
 
   public _setUpdateBannerVisibility(visibility: boolean) {
