@@ -4453,6 +4453,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           showSideBySideDiff={state.showSideBySideDiff}
           showDiffMinimap={state.showDiffMinimap}
           wrapDiffLines={state.wrapDiffLines}
+          fileTreeView={state.fileTreeView}
           focusCommitMessage={state.focusCommitMessage}
           askForConfirmationOnDiscardChanges={
             state.askForConfirmationOnDiscardChanges

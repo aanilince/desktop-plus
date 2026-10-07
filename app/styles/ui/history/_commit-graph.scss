@@ -24,27 +24,6 @@
       flex: 0 0 auto;
       padding: var(--spacing-half);
       padding-left: 0;
-
-      .button-group-item .octicon {
-        height: 14px;
-        width: 14px;
-      }
-
-      .button-group-item.selected,
-      .button-group-item[aria-pressed='true'] {
-        color: var(--box-selected-active-text-color);
-        background-color: var(--box-selected-active-background-color);
-        border-color: var(--box-selected-active-background-color);
-        z-index: 1;
-
-        &:not([aria-disabled='true']):hover,
-        &:focus,
-        &:active {
-          color: var(--box-selected-active-text-color);
-          background-color: var(--box-selected-active-background-color);
-          border-color: var(--box-selected-active-background-color);
-        }
-      }
     }
   }
 

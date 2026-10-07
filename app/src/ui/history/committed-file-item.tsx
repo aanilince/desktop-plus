@@ -6,11 +6,14 @@ import { PathLabel } from '../lib/path-label'
 import { Octicon, iconForStatus } from '../octicons'
 import { TooltippedContent } from '../lib/tooltipped-content'
 import { TooltipDirection } from '../lib/tooltip'
+import { FileTreeGuides, fileTreeIndentWidth } from '../lib/file-tree-folder'
 
 interface ICommittedFileItemProps {
   readonly availableWidth: number
   readonly file: CommittedFileChange
   readonly focused: boolean
+  /** Tree depth when rendered in a tree view; shows only the file name */
+  readonly depth?: number
 }
 
 export class CommittedFileItem extends React.Component<ICommittedFileItemProps> {
@@ -26,15 +29,20 @@ export class CommittedFileItem extends React.Component<ICommittedFileItemProps> 
       this.props.availableWidth -
       listItemPadding -
       filePathPadding -
-      statusWidth
+      statusWidth -
+      fileTreeIndentWidth(this.props.depth ?? 0)
 
     return (
       <div className="file">
+        {this.props.depth !== undefined && (
+          <FileTreeGuides depth={this.props.depth} />
+        )}
         <PathLabel
           path={file.path}
           status={file.status}
           availableWidth={availablePathWidth}
           ariaHidden={true}
+          fileNameOnly={this.props.depth !== undefined}
         />
         <TooltippedContent
           ancestorFocused={focused}

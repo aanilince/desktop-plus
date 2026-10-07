@@ -317,6 +317,9 @@ export interface IAppState {
   /** Whether text diff lines should wrap within the viewport */
   readonly wrapDiffLines: boolean
 
+  /** Whether lists of changed files are shown as a tree of folders */
+  readonly fileTreeView: boolean
+
   /** The user's preferred shell. */
   readonly selectedShell: Shell
 

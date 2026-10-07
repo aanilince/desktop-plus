@@ -858,7 +858,7 @@ function createStateUpdate<T extends IFilterListItem>(
       filterValueChanged = true
     }
 
-    if (!items.length) {
+    if (!items.length && !group.alwaysShowHeader) {
       continue
     }
 

@@ -5,6 +5,7 @@ import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import { PathText } from './path-text'
 import { IMatches } from '../../lib/fuzzy-find'
+import { getTreeFileLabel } from '../../lib/file-tree'
 
 interface IPathLabelProps {
   /** the current path of the file */
@@ -19,6 +20,9 @@ interface IPathLabelProps {
 
   /** The characters in the file path to highlight */
   readonly matches?: IMatches
+
+  /** Only show the file name, e.g. when its folder is shown as a tree row */
+  readonly fileNameOnly?: boolean
 }
 
 /** The pixel width reserved to give the resize arrow padding on either side. */
@@ -33,6 +37,12 @@ const ResizeArrowPadding = 10
  */
 export class PathLabel extends React.Component<IPathLabelProps, {}> {
   public render() {
+    if (this.props.fileNameOnly) {
+      return (
+        <PathLabel {...getTreeFileLabel(this.props)} fileNameOnly={false} />
+      )
+    }
+
     const props: React.HTMLProps<HTMLLabelElement> = {
       className: 'path-label-component',
     }

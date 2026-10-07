@@ -50,4 +50,75 @@
       color: var(--text-color);
     }
   }
+
+  // Tree view: no row separators so the guide lines read as continuous
+  &.tree-view .list-item {
+    border-bottom: none;
+  }
+
+  .file-tree-indent {
+    display: flex;
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+
+  .file-tree-guide {
+    width: 16px;
+    margin-left: 7px;
+    margin-right: -7px;
+    border-left: 1px solid var(--box-border-color);
+  }
+
+  .file-tree-folder {
+    gap: var(--spacing-half);
+
+    &:hover {
+      background-color: var(--box-hover-background-color);
+    }
+
+    .file-tree-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-half);
+      flex-grow: 1;
+      min-width: 0;
+      height: 100%;
+      padding: 0;
+      border: none;
+      background: none;
+      color: var(--text-color);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .file-tree-chevron {
+      flex-shrink: 0;
+      width: 12px;
+      color: var(--text-secondary-color);
+    }
+
+    .folder-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .folder-name-prefix,
+    .folder-count {
+      color: var(--text-secondary-color);
+    }
+
+    .folder-count {
+      flex-shrink: 0;
+      font-size: var(--font-size-sm);
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+.file-tree-view-toggle {
+  display: flex;
+  flex-shrink: 0;
+  margin-left: var(--spacing-half);
 }

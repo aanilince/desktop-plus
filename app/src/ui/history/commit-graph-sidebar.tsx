@@ -626,7 +626,7 @@ export class CommitGraphSidebar extends React.Component<
 
   private commitGraph_renderViewModeSwitch() {
     return (
-      <div className="commitGraph-view-mode-switch button-group">
+      <div className="commitGraph-view-mode-switch view-mode-switch button-group">
         <Button
           size="small"
           className={classNames('button-group-item', {

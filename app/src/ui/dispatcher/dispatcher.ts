@@ -2803,6 +2803,11 @@ export class Dispatcher {
     return this.appStore._setWrapDiffLines(wrapDiffLines)
   }
 
+  /** Change whether lists of changed files are shown as a tree */
+  public setFileTreeView(fileTreeView: boolean) {
+    return this.appStore._setFileTreeView(fileTreeView)
+  }
+
   /** Install the global Git LFS filters. */
   public installGlobalLFSFilters(force: boolean): Promise<void> {
     return this.appStore._installGlobalLFSFilters(force)

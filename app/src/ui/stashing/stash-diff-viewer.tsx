@@ -10,6 +10,7 @@ import { StashDiffHeader } from './stash-diff-header'
 import { SeamlessDiffSwitcher } from '../diff/seamless-diff-switcher'
 import { IConstrainedValue } from '../../lib/app-state'
 import { clamp } from '../../lib/clamp'
+import { getFolderPathMenuItems } from '../lib/file-tree-folder'
 
 interface IStashDiffViewerProps {
   /** The stash in question. */
@@ -38,6 +39,9 @@ interface IStashDiffViewerProps {
 
   /** Whether text diff lines should wrap within the viewport. */
   readonly wrapDiffLines: boolean
+
+  /** Whether the list of changed files is shown as a tree */
+  readonly fileTreeView: boolean
 
   /**
    * Called when the user requests to open a binary file in an the
@@ -95,6 +99,9 @@ export class StashDiffViewer extends React.PureComponent<IStashDiffViewerProps> 
 
     this.props.onOpenInExternalEditor(file.path)
   }
+
+  private getFolderContextMenuItems = (path: string) =>
+    getFolderPathMenuItems(this.props.repository, this.props.dispatcher, path)
 
   private onResize = (width: number) =>
     this.props.dispatcher.setStashedFilesWidth(width)
@@ -170,6 +177,8 @@ export class StashDiffViewer extends React.PureComponent<IStashDiffViewerProps> 
               selectedFiles={selectedStashedFile ? [selectedStashedFile] : []}
               availableWidth={availableWidth}
               onRowDoubleClick={this.onRowDoubleClick}
+              treeView={this.props.fileTreeView}
+              getFolderContextMenuItems={this.getFolderContextMenuItems}
             />
           </Resizable>
           {diffComponent}

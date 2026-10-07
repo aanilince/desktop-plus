@@ -7,6 +7,14 @@ export const CopyRelativeFilePathLabel = __DARWIN__
   ? 'Copy Relative File Path'
   : 'Copy relative file path'
 
+export const CopyFolderPathLabel = __DARWIN__
+  ? 'Copy Folder Path'
+  : 'Copy folder path'
+
+export const CopyRelativeFolderPathLabel = __DARWIN__
+  ? 'Copy Relative Folder Path'
+  : 'Copy relative folder path'
+
 export const CopySelectedPathsLabel = __DARWIN__ ? 'Copy Paths' : 'Copy paths'
 
 export const CopySelectedRelativePathsLabel = __DARWIN__

@@ -34,6 +34,12 @@ export interface IFilterListGroup<
   /** Whether to render this group's header. Defaults to true. */
   readonly showHeader?: boolean
 
+  /**
+   * Whether to keep rendering this group's header when it has no items.
+   * Only honored by AugmentedSectionFilterList. Defaults to false.
+   */
+  readonly alwaysShowHeader?: boolean
+
   /** The items in the group. */
   readonly items: ReadonlyArray<Item>
 }

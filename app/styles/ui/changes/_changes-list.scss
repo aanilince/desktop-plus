@@ -83,7 +83,7 @@
       display: flex;
       height: auto;
       flex-direction: column;
-      padding: var(--spacing-half) var(--spacing);
+      padding: var(--spacing-half) var(--spacing-half);
       margin: 0;
 
       .filter-box-container {
@@ -93,6 +93,12 @@
         transition: all 0.3s ease-out;
 
         input {
+          border-radius: 0 var(--border-radius) var(--border-radius) 0;
+        }
+
+        .fancy-text-box-component {
+          flex: 1;
+          min-width: 0;
           border-radius: 0 var(--border-radius) var(--border-radius) 0;
         }
 
@@ -139,6 +145,35 @@
             .badge-bg {
               background-color: var(--secondary-button-background);
             }
+          }
+        }
+
+        // Match the look of the search box it's attached to
+        .filter-button {
+          height: calc(var(--text-field-height) + 2px);
+          border: var(--base-border);
+          border-right: none;
+          background-color: var(--box-background-color);
+
+          .octicon {
+            opacity: 0.5;
+            transition: opacity 0.2s ease;
+          }
+
+          &.active span:first-child .octicon,
+          &:hover .octicon {
+            opacity: 1;
+          }
+
+          &:not([aria-disabled='true']):hover {
+            color: var(--text-color);
+            border-color: var(--box-border-color);
+            background-color: var(--box-background-color);
+          }
+
+          .badge-bg,
+          &:hover .badge-bg {
+            background-color: var(--box-background-color);
           }
         }
       }

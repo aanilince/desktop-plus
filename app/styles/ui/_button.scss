@@ -162,3 +162,27 @@
 .button-group .button-component .octicon {
   margin-left: 0;
 }
+
+/** A button group switching between view modes, e.g. a list or a tree */
+.view-mode-switch {
+  .button-group-item .octicon {
+    height: 14px;
+    width: 14px;
+  }
+
+  .button-group-item.selected,
+  .button-group-item[aria-pressed='true'] {
+    color: var(--box-selected-active-text-color);
+    background-color: var(--box-selected-active-background-color);
+    border-color: var(--box-selected-active-background-color);
+    z-index: 1;
+
+    &:not([aria-disabled='true']):hover,
+    &:focus,
+    &:active {
+      color: var(--box-selected-active-text-color);
+      background-color: var(--box-selected-active-background-color);
+      border-color: var(--box-selected-active-background-color);
+    }
+  }
+}

@@ -432,6 +432,7 @@ import {
   setShowSideBySideDiff,
   setWrapDiffLines,
 } from '../../ui/lib/diff-mode'
+import { getFileTreeView, setFileTreeView } from '../../ui/lib/file-tree-folder'
 import {
   abortCherryPick,
   cherryPick,
@@ -782,6 +783,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private showSideBySideDiff: boolean = ShowSideBySideDiffDefault
   private showDiffMinimap: boolean = ShowDiffMinimapDefault
   private wrapDiffLines: boolean = WrapDiffLinesDefault
+  private fileTreeView: boolean = false
 
   private uncommittedChangesStrategy = defaultUncommittedChangesStrategy
 
@@ -1504,6 +1506,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showSideBySideDiff: this.showSideBySideDiff,
       showDiffMinimap: this.showDiffMinimap,
       wrapDiffLines: this.wrapDiffLines,
+      fileTreeView: this.fileTreeView,
       selectedShell: this.selectedShell,
       repositoryFilterText: this.repositoryFilterText,
       resolvedExternalEditor: this.resolvedExternalEditor,
@@ -3204,6 +3207,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.showSideBySideDiff = getShowSideBySideDiff()
     this.showDiffMinimap = getShowDiffMinimap()
     this.wrapDiffLines = getWrapDiffLines()
+    this.fileTreeView = getFileTreeView()
 
     this.selectedTheme = getPersistedThemeName()
     // Make sure the persisted theme is applied
@@ -9383,6 +9387,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (wrapDiffLines !== this.wrapDiffLines) {
       setWrapDiffLines(wrapDiffLines)
       this.wrapDiffLines = wrapDiffLines
+      this.emitUpdate()
+    }
+  }
+
+  public _setFileTreeView(fileTreeView: boolean) {
+    if (fileTreeView !== this.fileTreeView) {
+      setFileTreeView(fileTreeView)
+      this.fileTreeView = fileTreeView
       this.emitUpdate()
     }
   }

@@ -27,6 +27,7 @@ import { Resizable } from '../resizable'
 import { showContextualMenu } from '../../lib/menu-item'
 
 import { FileList } from './file-list'
+import { getFolderPathMenuItems } from '../lib/file-tree-folder'
 import { SeamlessDiffSwitcher } from '../diff/seamless-diff-switcher'
 import { getDotComAPIEndpoint } from '../../lib/api'
 import { IMenuItem } from '../../lib/menu-item'
@@ -79,6 +80,9 @@ interface ISelectedCommitsProps {
 
   /** Whether text diff lines should wrap within the viewport. */
   readonly wrapDiffLines: boolean
+
+  /** Whether the list of changed files is shown as a tree */
+  readonly fileTreeView: boolean
 
   /**
    * Called when the user requests to open a binary file in an the
@@ -326,6 +330,8 @@ export class SelectedCommits extends DiffPresentationStateComponent<
           availableWidth={availableWidth}
           onContextMenu={this.onContextMenu}
           onRowDoubleClick={this.onRowDoubleClick}
+          treeView={this.props.fileTreeView}
+          getFolderContextMenuItems={this.getFolderContextMenuItems}
         />
       </>
     )
@@ -340,6 +346,9 @@ export class SelectedCommits extends DiffPresentationStateComponent<
       </div>
     )
   }
+
+  private getFolderContextMenuItems = (path: string) =>
+    getFolderPathMenuItems(this.props.repository, this.props.dispatcher, path)
 
   /**
    * Open file with default application.

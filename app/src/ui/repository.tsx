@@ -58,6 +58,7 @@ interface IRepositoryViewProps {
   readonly showSideBySideDiff: boolean
   readonly showDiffMinimap: boolean
   readonly wrapDiffLines: boolean
+  readonly fileTreeView: boolean
   readonly showDiffCheckMarks: boolean
   readonly preferAbsoluteDates: boolean
   readonly showConventionalCommitBadges: boolean
@@ -398,6 +399,7 @@ export class RepositoryView extends React.Component<
         showCommitLengthWarning={this.props.showCommitLengthWarning}
         showCommitAuthorInfo={this.props.showCommitAuthorInfo}
         showChangesFilter={this.props.showChangesFilter}
+        fileTreeView={this.props.fileTreeView}
         skipCommitHooks={this.props.skipCommitHooks}
         signOffCommits={this.props.signOffCommits}
         allowEmptyCommit={this.props.allowEmptyCommit}
@@ -610,6 +612,7 @@ export class RepositoryView extends React.Component<
           showSideBySideDiff={this.props.showSideBySideDiff}
           showDiffMinimap={this.props.showDiffMinimap}
           wrapDiffLines={this.props.wrapDiffLines}
+          fileTreeView={this.props.fileTreeView}
           onOpenBinaryFile={this.onOpenBinaryFile}
           onOpenSubmodule={this.onOpenSubmodule}
           onChangeImageDiffType={this.onChangeImageDiffType}
@@ -667,6 +670,7 @@ export class RepositoryView extends React.Component<
         showSideBySideDiff={this.props.showSideBySideDiff}
         showDiffMinimap={this.props.showDiffMinimap}
         wrapDiffLines={this.props.wrapDiffLines}
+        fileTreeView={this.props.fileTreeView}
         onOpenBinaryFile={this.onOpenBinaryFile}
         onOpenSubmodule={this.onOpenSubmodule}
         onChangeImageDiffType={this.onChangeImageDiffType}

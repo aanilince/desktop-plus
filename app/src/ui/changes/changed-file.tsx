@@ -9,6 +9,7 @@ import { TooltipDirection } from '../lib/tooltip'
 import { TooltippedContent } from '../lib/tooltipped-content'
 import { AriaLiveContainer } from '../accessibility/aria-live-container'
 import { IMatches } from '../../lib/fuzzy-find'
+import { FileTreeGuides, fileTreeIndentWidth } from '../lib/file-tree-folder'
 
 interface IChangedFileProps {
   readonly file: WorkingDirectoryFileChange
@@ -19,6 +20,8 @@ interface IChangedFileProps {
   readonly focused: boolean
   /** The characters in the file path to highlight */
   readonly matches?: IMatches
+  /** Tree depth when rendered in a tree view; shows only the file name */
+  readonly depth?: number
   readonly onIncludeChanged: (
     file: WorkingDirectoryFileChange,
     include: boolean
@@ -50,6 +53,7 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
       checkboxTooltip,
       focused,
       matches,
+      depth,
     } = this.props
     const { status, path } = file
     const fileStatus = mapStatus(status)
@@ -64,7 +68,8 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
       listItemPadding -
       checkboxWidth -
       filePadding -
-      statusWidth
+      statusWidth -
+      fileTreeIndentWidth(depth ?? 0)
 
     const includedText =
       this.props.include === true
@@ -79,6 +84,7 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
 
     return (
       <div className="file">
+        {depth !== undefined && <FileTreeGuides depth={depth} />}
         <TooltippedContent
           tooltip={checkboxTooltip}
           direction={TooltipDirection.EAST}
@@ -101,6 +107,7 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
           availableWidth={availablePathWidth}
           ariaHidden={true}
           matches={matches}
+          fileNameOnly={depth !== undefined}
         />
 
         <AriaLiveContainer message={pathScreenReaderMessage} />
