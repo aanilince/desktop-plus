@@ -24,6 +24,7 @@ import {
   IMultiCommitOperationState,
   CommitOptions,
 } from '../../lib/app-state'
+import { fileHistorySearchQuery } from '../../lib/commit-search-filter'
 import { assertNever, fatalError } from '../../lib/fatal-error'
 import {
   setGenericPassword,
@@ -315,6 +316,15 @@ export class Dispatcher {
     text: string
   ): Promise<void> {
     return this.appStore._updateCommitSearchQuery(repository, text)
+  }
+
+  /** Open the History tab showing only the commits that touched `path`. */
+  public async showFileHistory(
+    repository: Repository,
+    path: string
+  ): Promise<void> {
+    await this.changeRepositorySection(repository, RepositorySectionTab.History)
+    return this.setCommitSearchQuery(repository, fileHistorySearchQuery(path))
   }
 
   /** Load the changed files for the current history selection. */

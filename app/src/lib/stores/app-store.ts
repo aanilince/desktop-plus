@@ -214,9 +214,13 @@ import {
 import {
   canNarrowExistingResults,
   commitMatchesSearchFilter,
+  gitSearchTermsKey,
+  IGitSearchMatches,
   isCommitSearchFilterEmpty,
   parseCommitSearchFilter,
+  resolveCommitSearchFilter,
 } from '../commit-search-filter'
+import { searchCommitShas } from '../git/log-search'
 import { assertNever, fatalError, forceUnwrap } from '../fatal-error'
 
 import { formatCommitMessage } from '../format-commit-message'
@@ -315,7 +319,7 @@ import { hasShownWelcomeFlow, markWelcomeFlowComplete } from '../welcome'
 import { WindowState } from '../window-state'
 import { TypedBaseStore } from './base-store'
 import { MergeTreeResult } from '../../models/merge'
-import { promiseWithMinimumTimeout } from '../promise'
+import { promiseWithMinimumTimeout, sleep } from '../promise'
 import { BackgroundFetcher } from './helpers/background-fetcher'
 import { RepositoryStateCache } from './repository-state-cache'
 import {
@@ -634,6 +638,9 @@ const BackgroundFetchMinimumInterval = 30 * 60 * 1000
 const InitialRepositoryIndicatorTimeout = 2 * 60 * 1000
 
 const MinimumFilteredCommitsToLoad = 50
+
+/** How long typing must pause before git is asked to search commit contents */
+const CommitSearchGitDebounceMs = 250
 
 const MaxInvalidFoldersToDisplay = 3
 
@@ -2058,9 +2065,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
         return
       }
 
-      const { commitSearchQuery } =
+      const { commitSearchQuery, commitSearchGitMatches } =
         this.repositoryStateCache.get(repository).compareState
-      const searchFilter = parseCommitSearchFilter(commitSearchQuery)
+      const searchFilter = resolveCommitSearchFilter(
+        commitSearchQuery,
+        commitSearchGitMatches
+      )
       const filteredCommits = commits.filter(sha =>
         commitMatchesSearchFilter(gitStore.commitLookup.get(sha), searchFilter)
       )
@@ -2268,7 +2278,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     // The search may have changed while the batch was loading
     const searchQuery = latestCompareState.filteredHistoryCommitSearchQuery
-    const searchFilter = parseCommitSearchFilter(searchQuery)
+    const searchFilter = resolveCommitSearchFilter(
+      searchQuery,
+      latestCompareState.commitSearchGitMatches
+    )
     const newFilteredCommits = newCommits.filter(sha =>
       commitMatchesSearchFilter(gitStore.commitLookup.get(sha), searchFilter)
     )
@@ -2314,6 +2327,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
       commitGraphCommitSHAs: [],
     }))
     this.emitUpdate()
+
+    // The git-backed search covers the graph's refs, so redo it for the new ones
+    const { commitSearchQuery } =
+      this.repositoryStateCache.get(repository).compareState
+    if (parseCommitSearchFilter(commitSearchQuery).gitTerms !== null) {
+      void this._updateCommitSearchQuery(repository, commitSearchQuery)
+    }
 
     if (refs.length === 0) {
       return
@@ -2442,8 +2462,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
-    const searchFilter = parseCommitSearchFilter(
-      state.compareState.commitSearchQuery
+    const searchFilter = resolveCommitSearchFilter(
+      state.compareState.commitSearchQuery,
+      state.compareState.commitSearchGitMatches
     )
     const isSearching = !isCommitSearchFilterEmpty(searchFilter)
 
@@ -2477,8 +2498,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
 
     const latestState = this.repositoryStateCache.get(repository)
-    const latestSearchFilter = parseCommitSearchFilter(
-      latestState.compareState.commitSearchQuery
+    const latestSearchFilter = resolveCommitSearchFilter(
+      latestState.compareState.commitSearchQuery,
+      latestState.compareState.commitSearchGitMatches
     )
 
     if (!isCommitSearchFilterEmpty(latestSearchFilter)) {
@@ -2504,8 +2526,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository
   ): Promise<void> {
     const state = this.repositoryStateCache.get(repository)
-    const searchFilter = parseCommitSearchFilter(
-      state.compareState.commitSearchQuery
+    const searchFilter = resolveCommitSearchFilter(
+      state.compareState.commitSearchQuery,
+      state.compareState.commitSearchGitMatches
     )
 
     if (isCommitSearchFilterEmpty(searchFilter)) {
@@ -2550,6 +2573,60 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
   }
 
+  /**
+   * Make sure the compare state holds git's answer for the `content:`,
+   * `regex:` and `file:` terms of `query` (dropping it if there are none).
+   *
+   * Git is only asked once typing pauses, and a newer query abandons this one.
+   * The search covers the history tab's HEAD plus the commit graph's refs, so
+   * both views can filter with the same answer.
+   *
+   * @returns the up to date matches (null if the query has no git terms), or
+   *          'superseded' if a newer query arrived while waiting for git.
+   */
+  private async updateCommitSearchGitMatches(
+    repository: Repository,
+    query: string
+  ): Promise<IGitSearchMatches | null | 'superseded'> {
+    const getCompareState = () =>
+      this.repositoryStateCache.get(repository).compareState
+
+    const terms = parseCommitSearchFilter(query).gitTerms
+    if (terms === null) {
+      if (getCompareState().commitSearchGitMatches !== null) {
+        this.repositoryStateCache.updateCompareState(repository, () => ({
+          commitSearchGitMatches: null,
+        }))
+      }
+      return null
+    }
+
+    const termsKey = gitSearchTermsKey(terms)
+    const revisions = ['HEAD', ...getCompareState().commitGraphRefs]
+    const scopeKey = revisions.join('\0')
+
+    const existing = getCompareState().commitSearchGitMatches
+    if (existing?.termsKey === termsKey && existing.scopeKey === scopeKey) {
+      return existing
+    }
+
+    await sleep(CommitSearchGitDebounceMs)
+    if (getCompareState().commitSearchQuery !== query) {
+      return 'superseded'
+    }
+
+    const shas = await searchCommitShas(repository, terms, revisions)
+    if (getCompareState().commitSearchQuery !== query) {
+      return 'superseded'
+    }
+
+    const gitMatches = { termsKey, scopeKey, shas }
+    this.repositoryStateCache.updateCompareState(repository, () => ({
+      commitSearchGitMatches: gitMatches,
+    }))
+    return gitMatches
+  }
+
   public async _updateCommitSearchQuery(
     repository: Repository,
     query: string
@@ -2562,14 +2639,30 @@ export class AppStore extends TypedBaseStore<IAppState> {
       await this.currentCommitFilterPromise
     }
 
-    const state = this.repositoryStateCache.get(repository)
-    const compareState = state.compareState
-    if (compareState.commitSearchQuery !== query) {
+    if (
+      this.repositoryStateCache.get(repository).compareState
+        .commitSearchQuery !== query
+    ) {
       // A newer search query superseded this one while we were waiting
       return
     }
 
-    const searchFilter = parseCommitSearchFilter(query)
+    // Waiting for git can take a while, so only read the state afterwards.
+    const gitMatches = await this.updateCommitSearchGitMatches(
+      repository,
+      query
+    )
+    if (gitMatches === 'superseded') {
+      return
+    }
+
+    const state = this.repositoryStateCache.get(repository)
+    const compareState = state.compareState
+    if (compareState.commitSearchQuery !== query) {
+      return
+    }
+
+    const searchFilter = resolveCommitSearchFilter(query, gitMatches)
     const isIncrementalSearch = canNarrowExistingResults(
       compareState.filteredHistoryCommitSearchQuery,
       query

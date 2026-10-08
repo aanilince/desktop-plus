@@ -42,7 +42,8 @@ import {
   AuthorFilterPrefix,
   commitMatchesSearchFilter,
   isCommitSearchFilterEmpty,
-  parseCommitSearchFilter,
+  IGitSearchMatches,
+  resolveCommitSearchFilter,
 } from '../../lib/commit-search-filter'
 
 type CommitGraphBranchGroup =
@@ -356,9 +357,10 @@ export class CommitGraphSidebar extends React.Component<
     (
       commitSHAs: ReadonlyArray<string>,
       commitSearchQuery: string,
+      gitMatches: IGitSearchMatches | null,
       commitLookup: Map<string, Commit>
     ): ReadonlyArray<string> => {
-      const filter = parseCommitSearchFilter(commitSearchQuery)
+      const filter = resolveCommitSearchFilter(commitSearchQuery, gitMatches)
 
       if (isCommitSearchFilterEmpty(filter)) {
         return commitSHAs
@@ -972,6 +974,7 @@ export class CommitGraphSidebar extends React.Component<
     const commitSHAs = this.commitGraph_getFilteredCommitSHAsForState(
       this.props.compareState.commitGraphCommitSHAs,
       this.props.compareState.commitSearchQuery,
+      this.props.compareState.commitSearchGitMatches,
       this.props.commitLookup
     )
 

@@ -29,6 +29,7 @@ import {
   RevealInFileManagerLabel,
   OpenWithDefaultProgramLabel,
   CopyRelativeFilePathLabel,
+  ShowFileHistoryLabel,
   CopySelectedPathsLabel,
   CopySelectedRelativePathsLabel,
 } from '../lib/context-menu'
@@ -978,6 +979,16 @@ export class FilterChangesList extends React.Component<
     }
   }
 
+  private getShowFileHistoryMenuItem = (
+    file: WorkingDirectoryFileChange
+  ): IMenuItem => {
+    return {
+      label: ShowFileHistoryLabel,
+      action: () =>
+        this.props.dispatcher.showFileHistory(this.props.repository, file.path),
+    }
+  }
+
   private getCopySelectedPathsMenuItem = (
     files: WorkingDirectoryFileChange[]
   ): IMenuItem => {
@@ -1163,7 +1174,9 @@ export class FilterChangesList extends React.Component<
       items.push(
         { type: 'separator' },
         this.getCopyPathMenuItem(file),
-        this.getCopyRelativePathMenuItem(file)
+        this.getCopyRelativePathMenuItem(file),
+        { type: 'separator' },
+        this.getShowFileHistoryMenuItem(file)
       )
     }
 

@@ -4,6 +4,7 @@ import type {
   CopilotQuotaSnapshotsByAccount,
 } from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
+import type { IGitSearchMatches } from './commit-search-filter'
 import type { IConflictResolutionModelDisplay } from './copilot/conflict-resolution-model'
 import type {
   IFileResolution,
@@ -1038,6 +1039,12 @@ export interface ICompareState {
 
   /** The search query in the history tab (commit list) */
   readonly commitSearchQuery: string
+
+  /**
+   * What git found for the `content:`/`regex:`/`file:` terms of the search
+   * query, or null if the query has no such terms (or git has not answered).
+   */
+  readonly commitSearchGitMatches: IGitSearchMatches | null
 
   /** The SHA associated with the most recent history state */
   readonly tip: string | null
