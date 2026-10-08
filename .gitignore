@@ -20,3 +20,13 @@ junit*.xml
 *.swp
 tslint-rules/
 playwright-videos/
+
+# Local AI-assistant artifacts (never pushed)
+.planning/
+.claude/
+.vibe-review/
+graphify-out/
+docs/superpowers/
+CLAUDE.md
+AGENTS.md
+.context-mode/
