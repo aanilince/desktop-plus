@@ -417,6 +417,7 @@ function getInitialRepositoryState(): IRepositoryState {
       commitSearchQuery: '',
       allHistoryCommitSHAs: [],
       filteredHistoryCommitSHAs: [],
+      filteredHistoryCommitSearchQuery: '',
       commitGraphRefs: [],
       commitGraphHiddenBranchRefs: null,
       commitGraphCollapsedBranchGroups: [],

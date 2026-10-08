@@ -1045,6 +1045,12 @@ export interface ICompareState {
   /** The SHAs of commits to render in the compare list */
   readonly filteredHistoryCommitSHAs: ReadonlyArray<string>
 
+  /**
+   * The search query that `filteredHistoryCommitSHAs` was filtered with, which
+   * can lag behind `commitSearchQuery` while a new search is being applied.
+   */
+  readonly filteredHistoryCommitSearchQuery: string
+
   readonly allHistoryCommitSHAs: ReadonlyArray<string>
 
   /** The branch refs used to build the current commit graph. */

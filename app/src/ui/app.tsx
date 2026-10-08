@@ -1007,9 +1007,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       RepositorySectionTab.History
     )
 
-    this.props.dispatcher.updateCompareForm(state.repository, {
-      commitSearchQuery: '',
-    })
+    this.props.dispatcher.setCommitSearchQuery(state.repository, '')
 
     if (shouldFocusHistory) {
       this.repositoryViewRef.current?.setFocusHistoryNeeded()

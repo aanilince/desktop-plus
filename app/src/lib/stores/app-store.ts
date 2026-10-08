@@ -214,7 +214,6 @@ import {
 import {
   canNarrowExistingResults,
   commitMatchesSearchFilter,
-  ICommitSearchFilter,
   isCommitSearchFilterEmpty,
   parseCommitSearchFilter,
 } from '../commit-search-filter'
@@ -2059,9 +2058,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
         return
       }
 
-      const searchFilter = parseCommitSearchFilter(
-        compareState.commitSearchQuery
-      )
+      const { commitSearchQuery } =
+        this.repositoryStateCache.get(repository).compareState
+      const searchFilter = parseCommitSearchFilter(commitSearchQuery)
       const filteredCommits = commits.filter(sha =>
         commitMatchesSearchFilter(gitStore.commitLookup.get(sha), searchFilter)
       )
@@ -2075,6 +2074,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         formState: fromInitialize ? oldState.formState : historyState,
         allHistoryCommitSHAs: commits,
         filteredHistoryCommitSHAs: filteredCommits,
+        filteredHistoryCommitSearchQuery: commitSearchQuery,
         filterText: fromInitialize ? oldState.filterText : '',
         showBranchList: fromInitialize ? oldState.showBranchList : true,
       }))
@@ -2086,11 +2086,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         this.emitUpdate()
       }
       if (filteredCommits.length < MinimumFilteredCommitsToLoad) {
-        await this._loadNextCommitBatch(
-          repository,
-          filteredCommits.length,
-          searchFilter
-        )
+        await this._loadNextCommitBatch(repository, filteredCommits.length)
       }
       if (action.kind === HistoryTabMode.Compare) {
         // A branch comparison is active, recompute
@@ -2227,19 +2223,16 @@ export class AppStore extends TypedBaseStore<IAppState> {
   /** This shouldn't be called directly. See `Dispatcher`. */
   public async _loadNextCommitBatch(
     repository: Repository,
-    alreadyFiltered: number,
-    searchFilter?: ICommitSearchFilter
+    alreadyFiltered: number
   ): Promise<void> {
     const gitStore = this.gitStoreCache.get(repository)
 
     const state = this.repositoryStateCache.get(repository)
     const commits = state.compareState.allHistoryCommitSHAs
-    if (searchFilter === undefined) {
-      searchFilter = parseCommitSearchFilter(
-        state.compareState.commitSearchQuery
-      )
-    }
-    const isSearching = !isCommitSearchFilterEmpty(searchFilter)
+    const { filteredHistoryCommitSearchQuery } = state.compareState
+    const isSearching = !isCommitSearchFilterEmpty(
+      parseCommitSearchFilter(filteredHistoryCommitSearchQuery)
+    )
 
     const tip = state.branchesState.tip
 
@@ -2266,6 +2259,16 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
+    const latestCompareState =
+      this.repositoryStateCache.get(repository).compareState
+    if (latestCompareState.allHistoryCommitSHAs !== commits) {
+      // The history list was replaced or extended while this batch was loading
+      return
+    }
+
+    // The search may have changed while the batch was loading
+    const searchQuery = latestCompareState.filteredHistoryCommitSearchQuery
+    const searchFilter = parseCommitSearchFilter(searchQuery)
     const newFilteredCommits = newCommits.filter(sha =>
       commitMatchesSearchFilter(gitStore.commitLookup.get(sha), searchFilter)
     )
@@ -2273,19 +2276,25 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.repositoryStateCache.updateCompareState(repository, () => ({
       allHistoryCommitSHAs: commits.concat(newCommits),
       filteredHistoryCommitSHAs:
-        state.compareState.filteredHistoryCommitSHAs.concat(newFilteredCommits),
+        latestCompareState.filteredHistoryCommitSHAs.concat(newFilteredCommits),
     }))
 
-    const numFilteredCommits = alreadyFiltered + newFilteredCommits.length
     if (newFilteredCommits.length > 0) {
       this.emitUpdate()
     }
+
+    if (latestCompareState.commitSearchQuery !== searchQuery) {
+      // A pending search query update will refilter and load more if needed
+      return
+    }
+
+    const numFilteredCommits =
+      (searchQuery === filteredHistoryCommitSearchQuery
+        ? alreadyFiltered
+        : latestCompareState.filteredHistoryCommitSHAs.length) +
+      newFilteredCommits.length
     if (numFilteredCommits < MinimumFilteredCommitsToLoad) {
-      return this._loadNextCommitBatch(
-        repository,
-        numFilteredCommits,
-        searchFilter
-      )
+      return this._loadNextCommitBatch(repository, numFilteredCommits)
     }
     return
   }
@@ -2545,14 +2554,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     query: string
   ): Promise<void> {
-    const state = this.repositoryStateCache.get(repository)
-    const compareState = state.compareState
-    const searchFilter = parseCommitSearchFilter(query)
-    const isIncrementalSearch = canNarrowExistingResults(
-      compareState.commitSearchQuery,
-      query
-    )
-
     this.repositoryStateCache.updateCompareState(repository, () => ({
       commitSearchQuery: query,
     }))
@@ -2561,6 +2562,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
       await this.currentCommitFilterPromise
     }
 
+    const state = this.repositoryStateCache.get(repository)
+    const compareState = state.compareState
+    if (compareState.commitSearchQuery !== query) {
+      // A newer search query superseded this one while we were waiting
+      return
+    }
+
+    const searchFilter = parseCommitSearchFilter(query)
+    const isIncrementalSearch = canNarrowExistingResults(
+      compareState.filteredHistoryCommitSearchQuery,
+      query
+    )
     const candidateCommitSHAs = isIncrementalSearch
       ? compareState.filteredHistoryCommitSHAs
       : compareState.allHistoryCommitSHAs
@@ -2571,13 +2584,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
         )
     this.repositoryStateCache.updateCompareState(repository, () => ({
       filteredHistoryCommitSHAs: filteredCommitSHAs,
+      filteredHistoryCommitSearchQuery: query,
     }))
     this.emitUpdate()
     if (filteredCommitSHAs.length < MinimumFilteredCommitsToLoad) {
       this.currentCommitFilterPromise = this._loadNextCommitBatch(
         repository,
-        filteredCommitSHAs.length,
-        searchFilter
+        filteredCommitSHAs.length
       )
       await this.currentCommitFilterPromise
       this.currentCommitFilterPromise = null
