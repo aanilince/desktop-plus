@@ -1,23 +1,17 @@
-Desktop Plus v3.6.7-beta2
+Desktop Plus v3.6.7-beta3
 
-> [!NOTE]
-> This release is a hotfix for [v3.6.7-beta2 - RC1](https://github.com/desktop-plus/desktop-plus/releases/tag/v3.6.7.0).
-
-Upstream:
-- [GitHub Desktop 3.6.7-beta1 release notes](https://github.com/desktop/desktop/releases/tag/release-3.6.7-beta1)
-- [GitHub Desktop 3.6.7-beta2 release notes](https://github.com/desktop/desktop/releases/tag/release-3.6.7-beta2)
+Upstream: [GitHub Desktop 3.6.7-beta3 release notes](https://github.com/desktop/desktop/releases/tag/release-3.6.7-beta3)
 
 ## Changes and improvements:
 
-- [#244] You can now reorder groups in the repository list sidebar. Simply drag and drop them to your preferred order.
+- [#282] You can now use a folder tree view instead of the default plain file list. Thank you @AyhamAl-Ali for your contribution!  
+  To enable it, click the toggle button in the Changes tab.
 
-- [#280] If your repository has multiple remotes, you can now choose which one to push to.  
-  Right-click on the Pull/Push button and select "Push to other remote...".
+- [#271] The popups showing details about a commit's author now only appear when hovering over the author's name, instead of when hovering over the entire commit.
 
-- [#276] Switching to the Compare tab now automatically focuses the filter textbox, so you can start typing immediately.
+- The app currently has 2 view-mode toggles (in the Changes and History tabs). Since most people have a clear preference and don't need to switch between views constantly, you can now hide those toggles to reclaim some space in the UI.  
+  To hide the toggles, select "View > Hide View-Mode Toggles" from the menu bar.
 
 ## Fixes:
 
-- [#273] Fixed a visual bug where the repository filter textbox didn't have enough space to be usable when the sidebar was too narrow.
-
-- [#274] **macOS**: The "Open new window" menu item now uses the correct capitalization. Thanks @3vorp!
+- [#285] Fixed an issue where the commit list could remain filtered after the searchbox was cleared, causing the results to be incorrectly filtered.
