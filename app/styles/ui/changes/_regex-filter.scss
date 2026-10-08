@@ -1,0 +1,56 @@
+// Regex/case toggles and the exclude box of the changes list filter.
+.regex-filter-toggles {
+  display: flex;
+  flex-shrink: 0;
+  margin-left: var(--spacing-half);
+  gap: 2px;
+
+  .regex-filter-toggle {
+    height: calc(var(--text-field-height) + 2px);
+    min-width: 28px;
+    padding: 0 var(--spacing-half);
+    font-family: var(--font-family-monospace);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary-color);
+    background-color: transparent;
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+
+    &:hover:not(:disabled) {
+      color: var(--text-color);
+    }
+
+    &.active {
+      color: var(--text-color);
+      background-color: var(--box-selected-background-color);
+      border-color: var(--box-selected-active-background-color);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+}
+
+.regex-exclude-filter {
+  margin-bottom: var(--spacing-half);
+
+  .text-box-component {
+    width: 100%;
+  }
+
+  &.invalid input {
+    border-color: var(--error-color);
+  }
+}
+
+.filter-box-container .fancy-text-box-component.invalid-regex {
+  border-color: var(--error-color);
+}
+
+.regex-filter-error {
+  margin-top: var(--spacing-third);
+  font-size: var(--font-size-sm);
+  color: var(--error-color);
+  word-break: break-word;
+}

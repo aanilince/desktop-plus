@@ -1,6 +1,7 @@
 import { IFileListFilterState } from '../../lib/app-state'
 import { IChangesListItem } from './filter-changes-list'
 import memoizeOne from 'memoize-one'
+import { matchesRegexFilter } from './filter-changes-regex'
 
 /**
  * Apply filter options to determine if a file should be shown
@@ -84,7 +85,15 @@ export function getNoResultsMessage(
   const activeFilters: string[] = []
 
   if (filters.filterText) {
-    activeFilters.push(`"${filters.filterText}"`)
+    activeFilters.push(
+      filters.useRegex
+        ? `regex /${filters.filterText}/`
+        : `"${filters.filterText}"`
+    )
+  }
+
+  if (filters.useRegex && filters.excludeText) {
+    activeFilters.push(`excluding regex /${filters.excludeText}/`)
   }
 
   if (filters.isIncludedInCommit) {
@@ -145,7 +154,11 @@ export function countActiveFilterOptions(
  * Check if there are any active filters
  */
 export function hasActiveFilters(filters: IFileListFilterState): boolean {
-  return filters.filterText !== '' || countActiveFilterOptions(filters) > 0
+  return (
+    filters.filterText !== '' ||
+    (filters.useRegex && filters.excludeText !== '') ||
+    countActiveFilterOptions(filters) > 0
+  )
 }
 
 /**
@@ -160,6 +173,19 @@ export const applyFilters = memoizeOne(
   ) => {
     if (!showChangesFilter) {
       return true
+    }
+
+    // In regex mode the include pattern replaces the fuzzy filterText match, so
+    // it has to be applied here rather than by the list's own text filtering.
+    if (
+      filters.useRegex &&
+      !matchesRegexFilter(item.change.path, {
+        include: filters.filterText,
+        exclude: filters.excludeText,
+        caseSensitive: filters.caseSensitive,
+      })
+    ) {
+      return false
     }
 
     return applyFilterOptions(item, filters)

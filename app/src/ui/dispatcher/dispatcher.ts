@@ -23,6 +23,7 @@ import {
   MultiCommitOperationConflictState,
   IMultiCommitOperationState,
   CommitOptions,
+  IFileListFilterState,
 } from '../../lib/app-state'
 import { assertNever, fatalError } from '../../lib/fatal-error'
 import {
@@ -4768,6 +4769,13 @@ export class Dispatcher {
 
   public setChangesListFilterText(repository: Repository, filterText: string) {
     return this.appStore._setChangesListFilterText(repository, filterText)
+  }
+
+  public updateFileListFilter(
+    repository: Repository,
+    filterUpdate: Partial<IFileListFilterState>
+  ) {
+    return this.appStore._updateFileListFilter(repository, filterUpdate)
   }
   public setIncludedChangesInCommitFilter(
     repository: Repository,

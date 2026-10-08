@@ -57,6 +57,9 @@ describe('filter-changes-logic', () => {
       it('should show all files', () => {
         const filters: IFileListFilterState = {
           filterText: '',
+          useRegex: false,
+          caseSensitive: false,
+          excludeText: '',
           isIncludedInCommit: false,
           isExcludedFromCommit: false,
           isNewFile: false,
@@ -90,6 +93,9 @@ describe('filter-changes-logic', () => {
       it('should show files matching ALL active filters', () => {
         const filters: IFileListFilterState = {
           filterText: '',
+          useRegex: false,
+          caseSensitive: false,
+          excludeText: '',
           isIncludedInCommit: true,
           isExcludedFromCommit: false,
           isNewFile: true,
@@ -124,6 +130,9 @@ describe('filter-changes-logic', () => {
       it('should handle conflicting filters correctly', () => {
         const filters: IFileListFilterState = {
           filterText: '',
+          useRegex: false,
+          caseSensitive: false,
+          excludeText: '',
           isIncludedInCommit: true,
           isExcludedFromCommit: true, // Both can't be true at same time
           isNewFile: false,
@@ -150,6 +159,9 @@ describe('filter-changes-logic', () => {
       it('should treat untracked files as new files', () => {
         const filters: IFileListFilterState = {
           filterText: '',
+          useRegex: false,
+          caseSensitive: false,
+          excludeText: '',
           isIncludedInCommit: false,
           isExcludedFromCommit: false,
           isNewFile: true,
@@ -173,6 +185,9 @@ describe('filter-changes-logic', () => {
       it('should match excluded files when excluded filter is active', () => {
         const filters: IFileListFilterState = {
           filterText: '',
+          useRegex: false,
+          caseSensitive: false,
+          excludeText: '',
           isIncludedInCommit: false,
           isExcludedFromCommit: true,
           isNewFile: false,
@@ -201,6 +216,9 @@ describe('filter-changes-logic', () => {
     it('should return false when no filters are active', () => {
       const filters: IFileListFilterState = {
         filterText: '',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: false,
         isExcludedFromCommit: false,
         isNewFile: false,
@@ -223,6 +241,9 @@ describe('filter-changes-logic', () => {
     it('should return true when committing files not in filtered list', () => {
       const filters: IFileListFilterState = {
         filterText: '',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: true,
         isExcludedFromCommit: false,
         isNewFile: false,
@@ -245,6 +266,9 @@ describe('filter-changes-logic', () => {
     it('should return false when all files remain visible after filtering', () => {
       const filters: IFileListFilterState = {
         filterText: 'src',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: false,
         isExcludedFromCommit: false,
         isNewFile: false,
@@ -269,6 +293,9 @@ describe('filter-changes-logic', () => {
     it('should return undefined when no filters active', () => {
       const filters: IFileListFilterState = {
         filterText: '',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: false,
         isExcludedFromCommit: false,
         isNewFile: false,
@@ -282,6 +309,9 @@ describe('filter-changes-logic', () => {
     it('should return message with text filter', () => {
       const filters: IFileListFilterState = {
         filterText: 'test',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: false,
         isExcludedFromCommit: false,
         isNewFile: false,
@@ -296,6 +326,9 @@ describe('filter-changes-logic', () => {
     it('should return message with multiple filters', () => {
       const filters: IFileListFilterState = {
         filterText: '',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: true,
         isExcludedFromCommit: false,
         isNewFile: true,
@@ -311,6 +344,9 @@ describe('filter-changes-logic', () => {
     it('should format three or more filters with commas and and', () => {
       const filters: IFileListFilterState = {
         filterText: 'src',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: true,
         isExcludedFromCommit: false,
         isNewFile: false,
@@ -329,6 +365,9 @@ describe('filter-changes-logic', () => {
     it('should return false when no text or filter options are active', () => {
       const filters: IFileListFilterState = {
         filterText: '',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: false,
         isExcludedFromCommit: false,
         isNewFile: false,
@@ -343,6 +382,9 @@ describe('filter-changes-logic', () => {
       assert.equal(
         hasActiveFilters({
           filterText: 'src',
+          useRegex: false,
+          caseSensitive: false,
+          excludeText: '',
           isIncludedInCommit: false,
           isExcludedFromCommit: false,
           isNewFile: false,
@@ -355,6 +397,9 @@ describe('filter-changes-logic', () => {
       assert.equal(
         hasActiveFilters({
           filterText: '',
+          useRegex: false,
+          caseSensitive: false,
+          excludeText: '',
           isIncludedInCommit: false,
           isExcludedFromCommit: false,
           isNewFile: false,
@@ -376,6 +421,9 @@ describe('filter-changes-logic', () => {
 
       const filters: IFileListFilterState = {
         filterText: '',
+        useRegex: false,
+        caseSensitive: false,
+        excludeText: '',
         isIncludedInCommit: false,
         isExcludedFromCommit: false,
         isNewFile: true,
@@ -386,5 +434,64 @@ describe('filter-changes-logic', () => {
       assert.equal(applyFilters(item, false, filters), true)
       assert.equal(applyFilters(item, true, filters), false)
     })
+  })
+})
+
+describe('regex mode', () => {
+  const regexFilters = (
+    overrides: Partial<IFileListFilterState>
+  ): IFileListFilterState => ({
+    filterText: '',
+    isIncludedInCommit: false,
+    isExcludedFromCommit: false,
+    isNewFile: false,
+    isModifiedFile: false,
+    isDeletedFile: false,
+    useRegex: true,
+    caseSensitive: false,
+    excludeText: '',
+    ...overrides,
+  })
+
+  const item = (path: string) =>
+    createTestItem(path, AppFileStatusKind.Modified, DiffSelectionType.All)
+
+  it('applies the include regex to the full path', () => {
+    const filters = regexFilters({ filterText: '^app/src/' })
+    assert.equal(applyFilters(item('app/src/a.ts'), true, filters), true)
+    assert.equal(applyFilters(item('app/test/a.ts'), true, filters), false)
+  })
+
+  it('applies the exclude regex', () => {
+    const filters = regexFilters({ excludeText: '/test/' })
+    assert.equal(applyFilters(item('app/src/a.ts'), true, filters), true)
+    assert.equal(applyFilters(item('app/test/a.ts'), true, filters), false)
+  })
+
+  it('combines regex with the status filters (AND)', () => {
+    const filters = regexFilters({ filterText: '\\.ts$', isNewFile: true })
+    assert.equal(applyFilters(item('app/src/a.ts'), true, filters), false)
+  })
+
+  it('does not apply the regex when regex mode is off', () => {
+    const filters = regexFilters({ useRegex: false, filterText: '^nomatch$' })
+    // Plain mode leaves text matching to the fuzzy list filter
+    assert.equal(applyFilters(item('app/src/a.ts'), true, filters), true)
+  })
+
+  it('counts a non-empty exclude pattern as an active filter', () => {
+    assert.equal(hasActiveFilters(regexFilters({ excludeText: 'x' })), true)
+    assert.equal(
+      hasActiveFilters(regexFilters({ useRegex: false, excludeText: 'x' })),
+      false
+    )
+  })
+
+  it('describes regex filters in the no-results message', () => {
+    const message = getNoResultsMessage(
+      regexFilters({ filterText: '\\.ts$', excludeText: 'tests?' })
+    )
+    assert.ok(message?.includes('regex /\\.ts$/'))
+    assert.ok(message?.includes('excluding regex /tests?/'))
   })
 })

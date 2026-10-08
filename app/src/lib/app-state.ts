@@ -974,6 +974,15 @@ export interface IFileListFilterState {
 
   /** Whether to filter and show only deleted files */
   readonly isDeletedFile: boolean
+
+  /** Whether filterText/excludeText are regular expressions matched on the full path */
+  readonly useRegex: boolean
+
+  /** Whether regex matching is case-sensitive (only used when useRegex is on) */
+  readonly caseSensitive: boolean
+
+  /** Regex a path must NOT match (only used when useRegex is on) */
+  readonly excludeText: string
 }
 
 /**

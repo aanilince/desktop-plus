@@ -72,6 +72,11 @@ import {
   applyFilters,
 } from './filter-changes-logic'
 import { ChangesListFilterOptions } from './changes-list-filter-options'
+import {
+  RegexExcludeFilter,
+  RegexFilterToggles,
+  getRegexFilterError,
+} from './changes-list-regex-controls'
 import { generateStashListContextMenu } from '../stashing/stash-list-item-context-menu'
 import { HookProgress } from '../../lib/git'
 import { formatNumber } from '../../lib/format-number'
@@ -414,8 +419,9 @@ export class FilterChangesList extends React.Component<
     ): ReadonlyArray<WorkingDirectoryFileChange> => {
       const items = this.createListItems(files).items.filter(this.applyFilters)
       const filterText = fileListFilter.filterText.toLowerCase()
+      // In regex mode the pattern was already applied by applyFilters
       const matches =
-        filterText.length > 0
+        filterText.length > 0 && !fileListFilter.useRegex
           ? match(filterText, items, getText).map(m => m.item)
           : items
       return matches.map(i => i.change)
@@ -1685,7 +1691,10 @@ export class FilterChangesList extends React.Component<
   }
 
   private clearFilter = () => {
-    this.props.dispatcher.setChangesListFilterText(this.props.repository, '')
+    this.props.dispatcher.updateFileListFilter(this.props.repository, {
+      filterText: '',
+      excludeText: '',
+    })
   }
 
   private showFilesToBeCommitted = () => {
@@ -1770,34 +1779,56 @@ export class FilterChangesList extends React.Component<
       return null
     }
 
-    return (
-      <div className="filter-box-container">
-        <span>
-          <ChangesListFilterOptions
-            fileListFilter={this.props.fileListFilter}
-            filteredItems={this.state.filteredItems}
-            onFilterToIncludedInCommit={this.onFilterToIncludedInCommit}
-            onFilterExcludedFiles={this.onFilterExcludedFiles}
-            onFilterDeletedFiles={this.onFilterDeletedFiles}
-            onFilterModifiedFiles={this.onFilterModifiedFiles}
-            onFilterNewFiles={this.onFilterNewFiles}
-            onClearAllFilters={this.onClearAllFilters}
-            workingDirectory={this.props.workingDirectory}
-          />
-        </span>
-        <FancyTextBox
-          onRef={this.onTextBoxRef}
-          symbol={octicons.search}
-          displayClearButton={true}
-          placeholder={'Filter'}
-          className="filter-list-filter-field"
-          onValueChanged={this.onFilterTextChanged}
-          onKeyDown={this.onFilterKeyDown}
-          value={this.props.fileListFilter.filterText}
-        />
-        {this.renderTreeViewToggle()}
-      </div>
+    const { fileListFilter } = this.props
+    const includeError = getRegexFilterError(
+      fileListFilter,
+      fileListFilter.filterText
     )
+
+    return (
+      <>
+        <div className="filter-box-container">
+          <span>
+            <ChangesListFilterOptions
+              fileListFilter={this.props.fileListFilter}
+              filteredItems={this.state.filteredItems}
+              onFilterToIncludedInCommit={this.onFilterToIncludedInCommit}
+              onFilterExcludedFiles={this.onFilterExcludedFiles}
+              onFilterDeletedFiles={this.onFilterDeletedFiles}
+              onFilterModifiedFiles={this.onFilterModifiedFiles}
+              onFilterNewFiles={this.onFilterNewFiles}
+              onClearAllFilters={this.onClearAllFilters}
+              workingDirectory={this.props.workingDirectory}
+            />
+          </span>
+          <FancyTextBox
+            onRef={this.onTextBoxRef}
+            symbol={octicons.search}
+            displayClearButton={true}
+            placeholder={fileListFilter.useRegex ? 'Filter (regex)' : 'Filter'}
+            className={classNames('filter-list-filter-field', {
+              'invalid-regex': includeError !== null,
+            })}
+            onValueChanged={this.onFilterTextChanged}
+            onKeyDown={this.onFilterKeyDown}
+            value={this.props.fileListFilter.filterText}
+          />
+          <RegexFilterToggles
+            fileListFilter={fileListFilter}
+            onUpdate={this.onUpdateFileListFilter}
+          />
+          {this.renderTreeViewToggle()}
+        </div>
+        <RegexExcludeFilter
+          fileListFilter={fileListFilter}
+          onUpdate={this.onUpdateFileListFilter}
+        />
+      </>
+    )
+  }
+
+  private onUpdateFileListFilter = (update: Partial<IFileListFilterState>) => {
+    this.props.dispatcher.updateFileListFilter(this.props.repository, update)
   }
 
   private applyFilters = (item: IChangesListItem) => {
@@ -1829,7 +1860,8 @@ export class FilterChangesList extends React.Component<
             id="changes-list"
             rowHeight={RowHeight}
             filterText={
-              this.props.showChangesFilter
+              this.props.showChangesFilter &&
+              !this.props.fileListFilter.useRegex
                 ? this.props.fileListFilter.filterText
                 : ''
             }
@@ -2014,8 +2046,9 @@ export class FilterChangesList extends React.Component<
       'appliesClearAllChangesListFilterCount'
     )
 
-    // Clear all filters including text filter
-    this.props.dispatcher.setChangesListFilterText(this.props.repository, '')
+    // Clear all filters including text filter (regex/case toggles are modes
+    // rather than filters, so they are kept)
+    this.clearFilter()
     this.props.dispatcher.setIncludedChangesInCommitFilter(
       this.props.repository,
       false

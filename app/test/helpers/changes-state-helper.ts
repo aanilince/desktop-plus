@@ -24,6 +24,9 @@ export function createState<K extends keyof IChangesState>(
     currentRepoRulesInfo: new RepoRulesInfo(),
     fileListFilter: {
       filterText: '',
+      useRegex: false,
+      caseSensitive: false,
+      excludeText: '',
       isIncludedInCommit: false,
       isNewFile: false,
       isModifiedFile: false,
