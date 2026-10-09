@@ -3,6 +3,7 @@ import assert from 'node:assert'
 import {
   compileRegexFilter,
   matchesRegexFilter,
+  splitRegexList,
 } from '../../src/ui/changes/filter-changes-regex'
 
 describe('compileRegexFilter', () => {
@@ -118,6 +119,56 @@ describe('matchesRegexFilter', () => {
         caseSensitive: false,
       }),
       true
+    )
+  })
+})
+
+describe('comma-separated patterns', () => {
+  const query = (include: string, exclude: string) => ({
+    include,
+    exclude,
+    caseSensitive: false,
+  })
+
+  it('excludes files matching any pattern of the list', () => {
+    const q = query('', 'test, lock, json')
+    assert.equal(matchesRegexFilter('app/test/a.ts', q), false)
+    assert.equal(matchesRegexFilter('yarn.lock', q), false)
+    assert.equal(matchesRegexFilter('package.json', q), false)
+    assert.equal(matchesRegexFilter('app/src/a.ts', q), true)
+  })
+
+  it('includes files matching any pattern of the list', () => {
+    const q = query('\\.ts$, \\.tsx$', '')
+    assert.equal(matchesRegexFilter('a.ts', q), true)
+    assert.equal(matchesRegexFilter('a.tsx', q), true)
+    assert.equal(matchesRegexFilter('a.json', q), false)
+  })
+
+  it('does not split commas inside groups, classes or quantifiers', () => {
+    assert.deepEqual(splitRegexList('a{1,2}b, [x,y], (c,d)'), [
+      'a{1,2}b',
+      '[x,y]',
+      '(c,d)',
+    ])
+  })
+
+  it('treats an escaped comma as part of the pattern', () => {
+    assert.deepEqual(splitRegexList('a\\,b, c'), ['a\\,b', 'c'])
+    assert.equal(matchesRegexFilter('a,b.txt', query('', 'a\\,b')), false)
+  })
+
+  it('ignores empty items', () => {
+    assert.deepEqual(splitRegexList(' , json,, '), ['json'])
+  })
+
+  it('still applies the valid patterns when another one is invalid', () => {
+    const q = query('', 'json, (unclosed')
+    assert.equal(matchesRegexFilter('package.json', q), false)
+    assert.equal(matchesRegexFilter('a.ts', q), true)
+    assert.equal(
+      compileRegexFilter('json, (unclosed', { caseSensitive: false }).kind,
+      'invalid'
     )
   })
 })

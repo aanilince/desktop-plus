@@ -1805,7 +1805,11 @@ export class FilterChangesList extends React.Component<
             onRef={this.onTextBoxRef}
             symbol={octicons.search}
             displayClearButton={true}
-            placeholder={fileListFilter.useRegex ? 'Filter (regex)' : 'Filter'}
+            placeholder={
+              fileListFilter.useRegex
+                ? 'Filter (regex, comma-separated)'
+                : 'Filter'
+            }
             className={classNames('filter-list-filter-field', {
               'invalid-regex': includeError !== null,
             })}

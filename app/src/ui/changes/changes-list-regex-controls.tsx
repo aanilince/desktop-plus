@@ -36,7 +36,7 @@ export class RegexFilterToggles extends React.Component<IRegexFilterTogglesProps
           className={classNames('regex-filter-toggle', { active: useRegex })}
           ariaLabel="Use regular expression"
           ariaPressed={useRegex}
-          tooltip="Use regular expression (matches the full file path)"
+          tooltip="Use regular expressions on the full file path (separate several with commas)"
           onClick={this.onToggleRegex}
         >
           .*
@@ -102,7 +102,7 @@ export class RegexExcludeFilter extends React.Component<IRegexExcludeFilterProps
           ariaDescribedBy={
             excludeError !== null ? 'regex-filter-error' : undefined
           }
-          placeholder="Exclude (regex)"
+          placeholder="Exclude (regex, e.g. test, lock, json)"
           displayClearButton={true}
           value={fileListFilter.excludeText}
           onValueChanged={this.onExcludeTextChanged}
