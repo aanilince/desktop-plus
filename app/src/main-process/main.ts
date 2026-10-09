@@ -134,10 +134,15 @@ function getExtraErrorContext(): Record<string, string> {
 const protocolLauncherArg = '--protocol-launcher'
 
 const possibleProtocols = new Set(['x-github-client'])
+// GitHub sends the browser back to `<scheme>://oauth`, whatever callback URL the
+// OAuth app of the build has registered. With the development credentials that
+// is GitHub Desktop's development scheme; with our own OAuth app it is
+// x-pickaxe-auth (not GitHub Desktop's, so the two apps can't take each
+// other's sign-ins).
 if (__DEV_SECRETS__) {
   possibleProtocols.add('x-github-desktop-dev-auth')
 } else {
-  possibleProtocols.add('x-github-desktop-auth')
+  possibleProtocols.add('x-pickaxe-auth')
 }
 // Also support Desktop Classic's protocols.
 if (__DARWIN__) {

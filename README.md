@@ -59,7 +59,8 @@ corepack yarn package       # zip / installer in dist/
 
 - Pickaxe has its own app name, identifier and settings folder, so it can be installed **next to** Desktop Plus or GitHub Desktop. On its first launch it copies the settings of an existing GitHub Desktop installation, if there is one.
 - The icon and logos are still Desktop Plus's.
-- Signing in with GitHub uses the OAuth credentials bundled in the source for development builds, and the sign-in redirect page is hosted by Desktop Plus (`desktop-plus.org/oauth`), which this project doesn't control. To use your own OAuth app, set `DESKTOP_OAUTH_CLIENT_ID` and `DESKTOP_OAUTH_CLIENT_SECRET` when building and change the redirect in `app/src/lib/api.ts`. Local repositories don't need you to sign in.
+- **Signing in with GitHub** needs an OAuth app, set when the app is built: `DESKTOP_OAUTH_CLIENT_ID` and `DESKTOP_OAUTH_CLIENT_SECRET` (the CI builds read them from the repository secrets). Without them the development credentials from the source are used. To use your own, [register an OAuth app](https://github.com/settings/developers) with the callback URL `x-pickaxe-auth://oauth` and pass its ID and secret to the build. Note that the secret ends up inside the app, as it does in GitHub Desktop.
+- Signing in to Bitbucket, GitLab, Gitea or Codeberg still goes through Desktop Plus's redirect page (`desktop-plus.org/oauth`) and development credentials, which this project doesn't control. Local repositories don't need you to sign in.
 - The Linux and Windows packages are named after Pickaxe like the macOS one, but only the macOS build has been run on this fork.
 
 ## Development

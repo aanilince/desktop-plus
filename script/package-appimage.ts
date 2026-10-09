@@ -21,7 +21,7 @@ const ICON_SIZES = [32, 64, 128, 256, 512, 1024]
 
 const MIME_TYPES = [
   'x-scheme-handler/x-github-client',
-  'x-scheme-handler/x-github-desktop-auth',
+  'x-scheme-handler/x-pickaxe-auth',
   'x-scheme-handler/x-github-desktop-dev-auth',
 ]
 
