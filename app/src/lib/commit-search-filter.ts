@@ -4,6 +4,8 @@ export const AuthorFilterPrefix = 'author:'
 export const ContentFilterPrefix = 'content:'
 export const RegexFilterPrefix = 'regex:'
 export const FileFilterPrefix = 'file:'
+/** A bare `scope:all` term makes the git-backed terms search all branches. */
+export const AllBranchesTerm = 'scope:all'
 
 /**
  * Terms that can only be answered by asking git (they look at the diffs or
@@ -16,6 +18,8 @@ export interface IGitSearchTerms {
   readonly regex: string | null
   /** Commits touching this path, following renames (`git log --follow`) */
   readonly file: string | null
+  /** Search every branch and tag instead of just what the views show */
+  readonly allBranches: boolean
 }
 
 export interface ICommitSearchFilter {
@@ -32,11 +36,42 @@ export interface ICommitSearchFilter {
 
 const emptyAuthorEmails: ReadonlySet<string> = new Set()
 
-const gitPrefixes: ReadonlyArray<[string, keyof IGitSearchTerms]> = [
+type ValueTerm = 'content' | 'regex' | 'file'
+
+const gitPrefixes: ReadonlyArray<[string, ValueTerm]> = [
   [ContentFilterPrefix, 'content'],
   [RegexFilterPrefix, 'regex'],
   [FileFilterPrefix, 'file'],
 ]
+
+/**
+ * Read a double-quoted value starting at the opening quote. `\"` and `\\` are
+ * escapes, and a quote that is never closed (the user is still typing) runs to
+ * the end of the query.
+ */
+function readQuotedValue(query: string, openQuote: number) {
+  let value = ''
+  let i = openQuote + 1
+  while (i < query.length) {
+    const c = query[i]
+    const next = query[i + 1]
+    if (c === '\\' && (next === '"' || next === '\\')) {
+      value += next
+      i += 2
+    } else if (c === '"') {
+      return { value, end: i + 1 }
+    } else {
+      value += c
+      i++
+    }
+  }
+  return { value, end: query.length }
+}
+
+/** Quote a value so `readQuotedValue` gives back exactly `value`. */
+export function quoteSearchValue(value: string) {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
 
 /**
  * Split a raw commit search query into its 'author:' terms, its git-backed
@@ -44,9 +79,9 @@ const gitPrefixes: ReadonlyArray<[string, keyof IGitSearchTerms]> = [
  */
 export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
   const lowercaseQuery = query.toLowerCase()
-  const hasGitPrefix = gitPrefixes.some(([prefix]) =>
-    lowercaseQuery.includes(prefix)
-  )
+  const hasGitPrefix =
+    lowercaseQuery.includes(AllBranchesTerm) ||
+    gitPrefixes.some(([prefix]) => lowercaseQuery.includes(prefix))
 
   if (!hasGitPrefix && !lowercaseQuery.includes(AuthorFilterPrefix)) {
     return {
@@ -73,11 +108,12 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
     }
   }
 
-  let gitTerms: { -readonly [K in keyof IGitSearchTerms]: string | null } = {
+  let valueTerms: Record<ValueTerm, string | null> = {
     content: null,
     regex: null,
     file: null,
   }
+  let allBranches = false
 
   if (!hasGitPrefix) {
     lowercaseQuery.split(/\s+/).forEach(addTerm)
@@ -91,8 +127,18 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
         continue
       }
 
-      const gitPrefix = gitPrefixes.find(
-        ([prefix]) => lowercaseQuery.substr(i, prefix.length) === prefix
+      const afterScope = i + AllBranchesTerm.length
+      if (
+        lowercaseQuery.startsWith(AllBranchesTerm, i) &&
+        (afterScope >= query.length || /\s/.test(query[afterScope]))
+      ) {
+        allBranches = true
+        i = afterScope
+        continue
+      }
+
+      const gitPrefix = gitPrefixes.find(([prefix]) =>
+        lowercaseQuery.startsWith(prefix, i)
       )
 
       if (gitPrefix === undefined) {
@@ -111,9 +157,7 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
       let end: number
 
       if (query[valueStart] === '"') {
-        const close = query.indexOf('"', valueStart + 1)
-        end = close === -1 ? query.length : close + 1
-        value = query.substring(valueStart + 1, close === -1 ? end : close)
+        ;({ value, end } = readQuotedValue(query, valueStart))
       } else {
         end = valueStart
         while (end < query.length && !/\s/.test(query[end])) {
@@ -126,21 +170,22 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
         // Still being typed: keep it searchable as plain text.
         addTerm(lowercaseQuery.substring(i, end))
       } else {
-        gitTerms = { ...gitTerms, [key]: value }
+        valueTerms = { ...valueTerms, [key]: value }
       }
       i = end
     }
   }
 
   const hasGitTerms =
-    gitTerms.content !== null ||
-    gitTerms.regex !== null ||
-    gitTerms.file !== null
+    valueTerms.content !== null ||
+    valueTerms.regex !== null ||
+    valueTerms.file !== null
 
   return {
     queryTextLowercase: textTerms.join(' '),
     authorEmailsLowercase: authorEmails,
-    gitTerms: hasGitTerms ? gitTerms : null,
+    // `scope:all` only widens a git search, it isn't a search of its own
+    gitTerms: hasGitTerms ? { ...valueTerms, allBranches } : null,
     gitMatchedShas: null,
   }
 }
@@ -181,23 +226,101 @@ export function resolveCommitSearchFilter(
   return filter
 }
 
+/** What the text typed in the search box is looked for in. */
+export type CommitSearchMode =
+  /** The commit message, author, tags and SHA */
+  | 'message'
+  /** The code the commit adds or removes, as exact text */
+  | 'content'
+  /** The code the commit adds or removes, as a regular expression */
+  | 'regex'
+
+/** The search settings chosen with buttons rather than typed in the box. */
+export interface ICommitSearchOptions {
+  readonly mode: CommitSearchMode
+  /** Only commits touching this file (renames are followed). Empty: any. */
+  readonly file: string
+  /** Search all branches instead of just what the views show */
+  readonly allBranches: boolean
+}
+
+export const DefaultCommitSearchOptions: ICommitSearchOptions = {
+  mode: 'message',
+  file: '',
+  allBranches: false,
+}
+
+/** Whether any option differs from the default (to flag the button as active). */
+export function hasCustomCommitSearchOptions(options: ICommitSearchOptions) {
+  return (
+    options.mode !== DefaultCommitSearchOptions.mode ||
+    options.file.trim() !== '' ||
+    options.allBranches
+  )
+}
+
 /**
- * The search query that shows the history of a single file, e.g. what the
- * "Show history of this file" menu items put in the search box.
+ * Combine the text typed in the search box with the options chosen with
+ * buttons into the query string the filtering works on, so the box itself
+ * never has to show keywords like `content:`.
  *
- * A path containing a double quote can't be quoted and is not supported.
+ * `author:` terms stay terms in every mode; the rest of the text becomes the
+ * code to look for in the 'content' and 'regex' modes.
  */
-export function fileHistorySearchQuery(path: string): string {
-  // git pathspecs use forward slashes, whatever the platform
-  const normalized = path.replace(/\\/g, '/')
-  return /\s/.test(normalized)
-    ? `${FileFilterPrefix}"${normalized}"`
-    : `${FileFilterPrefix}${normalized}`
+export function buildCommitSearchQuery(
+  text: string,
+  options: ICommitSearchOptions
+): string {
+  const file = options.file.trim()
+  if (options.mode === 'message' && file === '') {
+    return text
+  }
+
+  const terms = new Array<string>()
+  let hasGitTerm = file !== ''
+
+  if (options.mode === 'message') {
+    terms.push(text.trim())
+  } else {
+    const authorTerms = new Array<string>()
+    const rest = text
+      .replace(/(^|\s)(author:\S+)/gi, (_match, _space, term: string) => {
+        authorTerms.push(term)
+        return ' '
+      })
+      .trim()
+
+    terms.push(...authorTerms)
+    if (rest !== '') {
+      const prefix =
+        options.mode === 'content' ? ContentFilterPrefix : RegexFilterPrefix
+      terms.push(`${prefix}${quoteSearchValue(rest)}`)
+      hasGitTerm = true
+    }
+  }
+
+  if (file !== '') {
+    // git pathspecs use forward slashes, whatever the platform
+    terms.push(
+      `${FileFilterPrefix}${quoteSearchValue(file.replace(/\\/g, '/'))}`
+    )
+  }
+
+  if (options.allBranches && hasGitTerm) {
+    terms.push(AllBranchesTerm)
+  }
+
+  return terms.filter(term => term !== '').join(' ')
 }
 
 /** A stable key identifying a set of git terms, for caching their results. */
 export function gitSearchTermsKey(terms: IGitSearchTerms): string {
-  return JSON.stringify([terms.content, terms.regex, terms.file])
+  return JSON.stringify([
+    terms.content,
+    terms.regex,
+    terms.file,
+    terms.allBranches,
+  ])
 }
 
 function gitTermsEqual(a: IGitSearchTerms | null, b: IGitSearchTerms | null) {

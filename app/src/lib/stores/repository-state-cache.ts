@@ -26,6 +26,7 @@ import { sendNonFatalException } from '../helpers/non-fatal-exception'
 import { IStatsStore } from '../stats'
 import { RepoRulesInfo } from '../../models/repo-rules'
 import { WorktreeEntry } from '../../models/worktree'
+import { DefaultCommitSearchOptions } from '../commit-search-filter'
 
 export class RepositoryStateCache {
   private readonly repositoryState = new Map<string, IRepositoryState>()
@@ -415,6 +416,8 @@ function getInitialRepositoryState(): IRepositoryState {
       showBranchList: true,
       filterText: '',
       commitSearchQuery: '',
+      commitSearchText: '',
+      commitSearchOptions: DefaultCommitSearchOptions,
       commitSearchGitMatches: null,
       allHistoryCommitSHAs: [],
       filteredHistoryCommitSHAs: [],

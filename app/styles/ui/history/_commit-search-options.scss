@@ -1,0 +1,72 @@
+// The search box with the options button on its left.
+.commit-search-form .commit-search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+
+  .fancy-text-box-component,
+  .commitGraph-filter-text-box {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.commit-search-options-button {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: calc(var(--text-field-height) + 2px);
+  padding: 0 var(--spacing-half);
+  color: var(--text-color);
+  border: var(--base-border);
+  border-radius: var(--border-radius);
+
+  &.active .octicon:first-child {
+    color: var(--box-selected-active-background-color);
+  }
+
+  .active-badge {
+    position: absolute;
+    top: 3px;
+    right: 18px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--box-selected-active-background-color);
+  }
+}
+
+.commit-search-options-popover {
+  min-width: 260px;
+
+  .commit-search-options-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+    }
+  }
+
+  .commit-search-options-group {
+    margin: var(--spacing) 0;
+    padding: 0;
+    border: 0;
+
+    legend {
+      padding: 0;
+      margin-bottom: var(--spacing-half);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+
+  .commit-search-options-footer {
+    margin-top: var(--spacing);
+  }
+
+  .popover-content {
+    padding: var(--spacing);
+  }
+}

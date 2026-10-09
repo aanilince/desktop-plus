@@ -4,7 +4,10 @@ import type {
   CopilotQuotaSnapshotsByAccount,
 } from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
-import type { IGitSearchMatches } from './commit-search-filter'
+import type {
+  ICommitSearchOptions,
+  IGitSearchMatches,
+} from './commit-search-filter'
 import type { IConflictResolutionModelDisplay } from './copilot/conflict-resolution-model'
 import type {
   IFileResolution,
@@ -1037,8 +1040,17 @@ export interface ICompareState {
   /** The text entered into the compare branch filter text box */
   readonly filterText: string
 
-  /** The search query in the history tab (commit list) */
+  /**
+   * The query the commit list and graph are filtered with. It is built from
+   * `commitSearchText` and `commitSearchOptions`, see `buildCommitSearchQuery`.
+   */
   readonly commitSearchQuery: string
+
+  /** The text typed in the search box, as the user sees it */
+  readonly commitSearchText: string
+
+  /** The search settings chosen with buttons next to the search box */
+  readonly commitSearchOptions: ICommitSearchOptions
 
   /**
    * What git found for the `content:`/`regex:`/`file:` terms of the search

@@ -1,12 +1,21 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import { setupEmptyRepositoryDefaultMain } from '../../helpers/repositories'
-import { makeCommit } from '../../helpers/repository-scaffolding'
+import {
+  createBranch,
+  makeCommit,
+  switchTo,
+} from '../../helpers/repository-scaffolding'
 import { git } from '../../../src/lib/git/core'
 import { searchCommitShas } from '../../../src/lib/git/log-search'
 import { Repository } from '../../../src/models/repository'
 
-const noTerms = { content: null, regex: null, file: null }
+const noTerms = {
+  content: null,
+  regex: null,
+  file: null,
+  allBranches: false,
+}
 
 async function shasOldestFirst(repository: Repository) {
   const result = await git(
@@ -148,5 +157,21 @@ describe('searchCommitShas', () => {
       ['HEAD']
     )
     assert.equal(shas.size, 0)
+  })
+  it('searches only the given revisions, or every branch with "all"', async t => {
+    const { repository } = await setupHistory(t)
+    await createBranch(repository, 'other', 'HEAD')
+    await switchTo(repository, 'other')
+    await makeCommit(repository, {
+      entries: [{ path: 'c.txt', contents: 'only on other branch\n' }],
+    })
+    await switchTo(repository, 'main')
+
+    const terms = { ...noTerms, content: 'only on other branch' }
+    const onHead = await searchCommitShas(repository, terms, ['HEAD'])
+    const onAll = await searchCommitShas(repository, terms, 'all')
+
+    assert.equal(onHead.size, 0)
+    assert.equal(onAll.size, 1)
   })
 })

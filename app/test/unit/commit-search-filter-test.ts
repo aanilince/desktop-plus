@@ -6,7 +6,10 @@ import {
   isCommitSearchFilterEmpty,
   parseCommitSearchFilter,
   withGitSearchMatches,
-  fileHistorySearchQuery,
+  buildCommitSearchQuery,
+  DefaultCommitSearchOptions,
+  hasCustomCommitSearchOptions,
+  quoteSearchValue,
 } from '../../src/lib/commit-search-filter'
 import { Commit } from '../../src/models/commit'
 import { CommitIdentity } from '../../src/models/commit-identity'
@@ -54,6 +57,7 @@ describe('parseCommitSearchFilter (git terms)', () => {
       content: 'FooBar',
       regex: 'a.+b',
       file: 'src/X.ts',
+      allBranches: false,
     })
     assert.equal(f.queryTextLowercase, '')
   })
@@ -162,28 +166,145 @@ describe('canNarrowExistingResults', () => {
   })
 })
 
-describe('fileHistorySearchQuery', () => {
-  const roundTrip = (path: string) =>
-    parseCommitSearchFilter(fileHistorySearchQuery(path)).gitTerms?.file
-
-  it('produces a plain term for a simple path', () => {
-    assert.equal(fileHistorySearchQuery('src/a.ts'), 'file:src/a.ts')
+describe('quoted values', () => {
+  it('unescapes \\" and \\\\ inside quotes', () => {
+    const f = parseCommitSearchFilter('content:"say \\"hi\\" \\\\ ok"')
+    assert.equal(f.gitTerms?.content, 'say "hi" \\ ok')
   })
 
-  it('quotes paths with spaces', () => {
+  it('round-trips arbitrary text through quoteSearchValue', () => {
+    for (const value of ['a "b" c', 'back\\slash', 'end\\', '"', '\\"']) {
+      const f = parseCommitSearchFilter(`content:${quoteSearchValue(value)}`)
+      assert.equal(f.gitTerms?.content, value)
+    }
+  })
+})
+
+describe('scope:all', () => {
+  it('widens a git search to all branches', () => {
+    const f = parseCommitSearchFilter('content:foo scope:all')
+    assert.equal(f.gitTerms?.allBranches, true)
+  })
+
+  it('is not free text and does nothing without a git term', () => {
+    const f = parseCommitSearchFilter('fix scope:all')
+    assert.equal(f.gitTerms, null)
+    assert.equal(f.queryTextLowercase, 'fix')
+  })
+
+  it('does not narrow results when the scope changes', () => {
     assert.equal(
-      fileHistorySearchQuery('my dir/a b.ts'),
-      'file:"my dir/a b.ts"'
+      canNarrowExistingResults('content:foo', 'content:foo scope:all'),
+      false
+    )
+  })
+})
+
+describe('buildCommitSearchQuery', () => {
+  const opts = (o: Partial<typeof DefaultCommitSearchOptions>) => ({
+    ...DefaultCommitSearchOptions,
+    ...o,
+  })
+
+  it('leaves the text untouched with default options', () => {
+    assert.equal(
+      buildCommitSearchQuery('fix  bug ', DefaultCommitSearchOptions),
+      'fix  bug '
     )
   })
 
-  it('round-trips through the parser', () => {
-    for (const path of ['src/a.ts', 'my dir/a b.ts', 'weird[1].ts', 'ü/ö.ts']) {
-      assert.equal(roundTrip(path), path)
-    }
+  it('turns the text into a content search', () => {
+    assert.equal(
+      buildCommitSearchQuery('hello world', opts({ mode: 'content' })),
+      'content:"hello world"'
+    )
   })
 
-  it('uses forward slashes so Windows paths work', () => {
-    assert.equal(fileHistorySearchQuery('src\\a.ts'), 'file:src/a.ts')
+  it('turns the text into a regex search', () => {
+    assert.equal(
+      buildCommitSearchQuery('a.+b', opts({ mode: 'regex' })),
+      'regex:"a.+b"'
+    )
+  })
+
+  it('keeps author: terms out of the searched code', () => {
+    assert.equal(
+      buildCommitSearchQuery(
+        'foo author:me@x.com bar',
+        opts({ mode: 'content' })
+      ),
+      'author:me@x.com content:"foo  bar"'
+    )
+  })
+
+  it('adds the file restriction', () => {
+    assert.equal(
+      buildCommitSearchQuery('fix', opts({ file: 'src\\a b.ts' })),
+      'fix file:"src/a b.ts"'
+    )
+  })
+
+  it('searches just a file when there is no text', () => {
+    assert.equal(
+      buildCommitSearchQuery('', opts({ file: 'a.ts' })),
+      'file:"a.ts"'
+    )
+  })
+
+  it('adds scope:all only when there is a git term to widen', () => {
+    assert.equal(
+      buildCommitSearchQuery('x', opts({ mode: 'content', allBranches: true })),
+      'content:"x" scope:all'
+    )
+    assert.equal(buildCommitSearchQuery('x', opts({ allBranches: true })), 'x')
+  })
+
+  it('does not search code for empty text', () => {
+    assert.equal(buildCommitSearchQuery('', opts({ mode: 'content' })), '')
+  })
+
+  it('produces queries the parser understands', () => {
+    const f = parseCommitSearchFilter(
+      buildCommitSearchQuery(
+        'say "hi"',
+        opts({ mode: 'content', file: 'dir/a b.ts', allBranches: true })
+      )
+    )
+    assert.deepEqual(f.gitTerms, {
+      content: 'say "hi"',
+      regex: null,
+      file: 'dir/a b.ts',
+      allBranches: true,
+    })
+  })
+})
+
+describe('hasCustomCommitSearchOptions', () => {
+  it('is false for the defaults and true for any change', () => {
+    assert.equal(
+      hasCustomCommitSearchOptions(DefaultCommitSearchOptions),
+      false
+    )
+    assert.equal(
+      hasCustomCommitSearchOptions({
+        ...DefaultCommitSearchOptions,
+        mode: 'regex',
+      }),
+      true
+    )
+    assert.equal(
+      hasCustomCommitSearchOptions({
+        ...DefaultCommitSearchOptions,
+        file: 'a',
+      }),
+      true
+    )
+    assert.equal(
+      hasCustomCommitSearchOptions({
+        ...DefaultCommitSearchOptions,
+        file: '  ',
+      }),
+      false
+    )
   })
 })

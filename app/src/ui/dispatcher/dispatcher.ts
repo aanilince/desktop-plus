@@ -24,7 +24,7 @@ import {
   IMultiCommitOperationState,
   CommitOptions,
 } from '../../lib/app-state'
-import { fileHistorySearchQuery } from '../../lib/commit-search-filter'
+import { ICommitSearchOptions } from '../../lib/commit-search-filter'
 import { assertNever, fatalError } from '../../lib/fatal-error'
 import {
   setGenericPassword,
@@ -310,12 +310,51 @@ export class Dispatcher {
     return this.appStore._commitGraph_loadFilterAuthors(repository)
   }
 
-  /** Update the commit search filter text. */
+  /**
+   * Update the text typed in the commit search box and filter the commit list
+   * with it (and the search options chosen next to the box).
+   */
   public setCommitSearchQuery(
     repository: Repository,
     text: string
   ): Promise<void> {
-    return this.appStore._updateCommitSearchQuery(repository, text)
+    return this.appStore._updateCommitSearchQuery(
+      repository,
+      this.appStore._setCommitSearchInputs(repository, { text })
+    )
+  }
+
+  /** Change the commit search options and filter the commit list with them. */
+  public setCommitSearchOptions(
+    repository: Repository,
+    options: Partial<ICommitSearchOptions>
+  ): Promise<void> {
+    return this.appStore._updateCommitSearchQuery(
+      repository,
+      this.appStore._setCommitSearchInputs(repository, { options })
+    )
+  }
+
+  /** Empty the commit search box and reset its options. */
+  public clearCommitSearch(repository: Repository): Promise<void> {
+    return this.appStore._updateCommitSearchQuery(
+      repository,
+      this.appStore._clearCommitSearchInputs(repository)
+    )
+  }
+
+  /**
+   * Change the commit search text and/or options without filtering anything,
+   * for views (the commit graph) that filter on their own afterwards.
+   */
+  public updateCommitSearchInputs(
+    repository: Repository,
+    update: {
+      readonly text?: string
+      readonly options?: Partial<ICommitSearchOptions>
+    }
+  ) {
+    this.appStore._setCommitSearchInputs(repository, update)
   }
 
   /** Open the History tab showing only the commits that touched `path`. */
@@ -324,7 +363,8 @@ export class Dispatcher {
     path: string
   ): Promise<void> {
     await this.changeRepositorySection(repository, RepositorySectionTab.History)
-    return this.setCommitSearchQuery(repository, fileHistorySearchQuery(path))
+    this.appStore._clearCommitSearchInputs(repository)
+    return this.setCommitSearchOptions(repository, { file: path })
   }
 
   /** Load the changed files for the current history selection. */

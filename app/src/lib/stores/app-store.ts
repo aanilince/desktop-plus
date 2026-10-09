@@ -212,15 +212,18 @@ import {
   launchExternalEditor,
 } from '../editors'
 import {
+  buildCommitSearchQuery,
   canNarrowExistingResults,
   commitMatchesSearchFilter,
-  gitSearchTermsKey,
+  DefaultCommitSearchOptions,
+  ICommitSearchOptions,
   IGitSearchMatches,
   isCommitSearchFilterEmpty,
   parseCommitSearchFilter,
   resolveCommitSearchFilter,
 } from '../commit-search-filter'
 import { searchCommitShas } from '../git/log-search'
+import { findGitSearchMatches } from '../commit-search-git-matches'
 import { assertNever, fatalError, forceUnwrap } from '../fatal-error'
 
 import { formatCommitMessage } from '../format-commit-message'
@@ -2525,6 +2528,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
   public async _commitGraph_ensureEnoughFilteredCommits(
     repository: Repository
   ): Promise<void> {
+    // The graph doesn't go through _updateCommitSearchQuery, so this is where
+    // it makes sure git has answered the query's content:/regex:/file: terms.
+    const query =
+      this.repositoryStateCache.get(repository).compareState.commitSearchQuery
+    if (
+      (await this.updateCommitSearchGitMatches(repository, query)) ===
+      'superseded'
+    ) {
+      return
+    }
+
     const state = this.repositoryStateCache.get(repository)
     const searchFilter = resolveCommitSearchFilter(
       state.compareState.commitSearchQuery,
@@ -2574,6 +2588,42 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   /**
+   * Change the text typed in the search box and/or the options chosen next to
+   * it, and rebuild the query the views are filtered with. This only updates
+   * the state: the caller decides which view then re-filters.
+   *
+   * @returns the rebuilt query
+   */
+  public _setCommitSearchInputs(
+    repository: Repository,
+    update: {
+      readonly text?: string
+      readonly options?: Partial<ICommitSearchOptions>
+    }
+  ): string {
+    const { compareState } = this.repositoryStateCache.get(repository)
+    const text = update.text ?? compareState.commitSearchText
+    const options = { ...compareState.commitSearchOptions, ...update.options }
+    const commitSearchQuery = buildCommitSearchQuery(text, options)
+
+    this.repositoryStateCache.updateCompareState(repository, () => ({
+      commitSearchText: text,
+      commitSearchOptions: options,
+      commitSearchQuery,
+    }))
+    this.emitUpdate()
+    return commitSearchQuery
+  }
+
+  /** Empty the search box and put the search options back to the defaults. */
+  public _clearCommitSearchInputs(repository: Repository): string {
+    return this._setCommitSearchInputs(repository, {
+      text: '',
+      options: DefaultCommitSearchOptions,
+    })
+  }
+
+  /**
    * Make sure the compare state holds git's answer for the `content:`,
    * `regex:` and `file:` terms of `query` (dropping it if there are none).
    *
@@ -2590,6 +2640,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   ): Promise<IGitSearchMatches | null | 'superseded'> {
     const getCompareState = () =>
       this.repositoryStateCache.get(repository).compareState
+    const existingMatches = () => getCompareState().commitSearchGitMatches
 
     const terms = parseCommitSearchFilter(query).gitTerms
     if (terms === null) {
@@ -2601,29 +2652,23 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return null
     }
 
-    const termsKey = gitSearchTermsKey(terms)
-    const revisions = ['HEAD', ...getCompareState().commitGraphRefs]
-    const scopeKey = revisions.join('\0')
+    const gitMatches = await findGitSearchMatches({
+      terms,
+      revisions: terms.allBranches
+        ? 'all'
+        : ['HEAD', ...getCompareState().commitGraphRefs],
+      existing: getCompareState().commitSearchGitMatches,
+      isStillCurrent: () => getCompareState().commitSearchQuery === query,
+      search: (t, revisions) => searchCommitShas(repository, t, revisions),
+      waitForTypingToPause: () => sleep(CommitSearchGitDebounceMs),
+    })
 
-    const existing = getCompareState().commitSearchGitMatches
-    if (existing?.termsKey === termsKey && existing.scopeKey === scopeKey) {
-      return existing
+    if (gitMatches !== 'superseded' && gitMatches !== existingMatches()) {
+      this.repositoryStateCache.updateCompareState(repository, () => ({
+        commitSearchGitMatches: gitMatches,
+      }))
+      this.emitUpdate()
     }
-
-    await sleep(CommitSearchGitDebounceMs)
-    if (getCompareState().commitSearchQuery !== query) {
-      return 'superseded'
-    }
-
-    const shas = await searchCommitShas(repository, terms, revisions)
-    if (getCompareState().commitSearchQuery !== query) {
-      return 'superseded'
-    }
-
-    const gitMatches = { termsKey, scopeKey, shas }
-    this.repositoryStateCache.updateCompareState(repository, () => ({
-      commitSearchGitMatches: gitMatches,
-    }))
     return gitMatches
   }
 

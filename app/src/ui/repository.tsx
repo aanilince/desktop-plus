@@ -919,7 +919,7 @@ export class RepositoryView extends React.Component<
       })
     }
     if (section === RepositorySectionTab.History) {
-      this.props.dispatcher.setCommitSearchQuery(this.props.repository, '')
+      this.props.dispatcher.clearCommitSearch(this.props.repository)
       this.props.dispatcher.executeCompare(this.props.repository, {
         kind: HistoryTabMode.History,
       })
