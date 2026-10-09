@@ -25,6 +25,7 @@ import {
   CommitOptions,
 } from '../../lib/app-state'
 import { ICommitSearchOptions } from '../../lib/commit-search-filter'
+import { getTrackedFilePaths } from '../../lib/git/ls-files'
 import { assertNever, fatalError } from '../../lib/fatal-error'
 import {
   setGenericPassword,
@@ -355,6 +356,13 @@ export class Dispatcher {
     }
   ) {
     this.appStore._setCommitSearchInputs(repository, update)
+  }
+
+  /** The paths of the files tracked by the repository. */
+  public getTrackedFilePaths(
+    repository: Repository
+  ): Promise<ReadonlyArray<string>> {
+    return getTrackedFilePaths(repository)
   }
 
   /** Open the History tab showing only the commits that touched `path`. */

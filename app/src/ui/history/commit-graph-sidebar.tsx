@@ -624,6 +624,7 @@ export class CommitGraphSidebar extends React.Component<
                 options={this.props.compareState.commitSearchOptions}
                 showAllBranches={true}
                 onChange={this.onCommitSearchOptionsChanged}
+                loadFilePaths={this.loadFilePaths}
               />
               <CommitGraphFilterTextBox
                 ariaLabel="Commit filter"
@@ -1423,6 +1424,9 @@ export class CommitGraphSidebar extends React.Component<
       stopSearching()
     }
   }
+
+  private loadFilePaths = () =>
+    this.props.dispatcher.getTrackedFilePaths(this.props.repository)
 
   private onCommitSearchOptionsChanged = async (
     options: Partial<ICommitSearchOptions>

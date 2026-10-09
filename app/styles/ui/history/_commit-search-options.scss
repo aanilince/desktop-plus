@@ -70,3 +70,32 @@
     padding: var(--spacing);
   }
 }
+
+.file-path-input {
+  .file-path-suggestions {
+    margin: var(--spacing-third) 0 0;
+    padding: 0;
+    max-height: 160px;
+    overflow-y: auto;
+    list-style: none;
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    background: var(--box-background-color);
+
+    li {
+      padding: var(--spacing-third) var(--spacing-half);
+      font-family: var(--font-family-monospace);
+      font-size: var(--font-size-sm);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+
+      &.selected,
+      &:hover {
+        color: var(--box-selected-active-text-color);
+        background: var(--box-selected-active-background-color);
+      }
+    }
+  }
+}

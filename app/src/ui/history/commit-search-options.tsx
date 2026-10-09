@@ -16,7 +16,7 @@ import {
   PopoverDecoration,
 } from '../lib/popover'
 import { RadioGroup } from '../lib/radio-group'
-import { TextBox } from '../lib/text-box'
+import { FilePathInput } from './file-path-input'
 
 interface ICommitSearchOptionsProps {
   readonly options: ICommitSearchOptions
@@ -28,6 +28,9 @@ interface ICommitSearchOptionsProps {
   readonly showAllBranches: boolean
 
   readonly onChange: (options: Partial<ICommitSearchOptions>) => void
+
+  /** Lists the repository's files, to suggest paths for the file option. */
+  readonly loadFilePaths: () => Promise<ReadonlyArray<string>>
 }
 
 interface ICommitSearchOptionsState {
@@ -115,12 +118,12 @@ export class CommitSearchOptions extends React.Component<
         </fieldset>
 
         <div className="commit-search-options-group">
-          <TextBox
+          <FilePathInput
             label="Only commits touching this file"
             placeholder="path/to/file.ts"
-            displayClearButton={true}
             value={options.file}
-            onValueChanged={this.onFileChanged}
+            onValueCommitted={this.onFileChanged}
+            loadPaths={this.props.loadFilePaths}
           />
         </div>
 

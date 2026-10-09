@@ -196,6 +196,7 @@ export class CompareSidebar extends React.Component<
               options={commitSearchOptions}
               showAllBranches={false}
               onChange={this.onCommitSearchOptionsChanged}
+              loadFilePaths={this.loadFilePaths}
             />
             <FancyTextBox
               ariaLabel="Commit filter"
@@ -642,6 +643,9 @@ export class CompareSidebar extends React.Component<
     )
     this.setState({ isSearching: false })
   }
+
+  private loadFilePaths = () =>
+    this.props.dispatcher.getTrackedFilePaths(this.props.repository)
 
   private onCommitSearchOptionsChanged = async (
     options: Partial<ICommitSearchOptions>
