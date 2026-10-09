@@ -11,6 +11,7 @@ const terms: IGitSearchTerms = {
   regex: null,
   file: null,
   allBranches: false,
+  matchCase: false,
 }
 
 function setup(overrides: {

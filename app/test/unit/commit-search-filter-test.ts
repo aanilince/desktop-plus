@@ -58,6 +58,7 @@ describe('parseCommitSearchFilter (git terms)', () => {
       regex: 'a.+b',
       file: 'src/X.ts',
       allBranches: false,
+      matchCase: false,
     })
     assert.equal(f.queryTextLowercase, '')
   })
@@ -200,6 +201,32 @@ describe('scope:all', () => {
   })
 })
 
+describe('case:match', () => {
+  it('makes the git search case-sensitive', () => {
+    assert.equal(
+      parseCommitSearchFilter('content:Foo case:match').gitTerms?.matchCase,
+      true
+    )
+    assert.equal(
+      parseCommitSearchFilter('content:Foo').gitTerms?.matchCase,
+      false
+    )
+  })
+
+  it('is not free text', () => {
+    const f = parseCommitSearchFilter('fix case:match')
+    assert.equal(f.gitTerms, null)
+    assert.equal(f.queryTextLowercase, 'fix')
+  })
+
+  it('does not narrow results when it changes', () => {
+    assert.equal(
+      canNarrowExistingResults('content:foo', 'content:foo case:match'),
+      false
+    )
+  })
+})
+
 describe('buildCommitSearchQuery', () => {
   const opts = (o: Partial<typeof DefaultCommitSearchOptions>) => ({
     ...DefaultCommitSearchOptions,
@@ -259,6 +286,18 @@ describe('buildCommitSearchQuery', () => {
     assert.equal(buildCommitSearchQuery('x', opts({ allBranches: true })), 'x')
   })
 
+  it('adds case:match only when searching code', () => {
+    assert.equal(
+      buildCommitSearchQuery('x', opts({ mode: 'regex', matchCase: true })),
+      'regex:"x" case:match'
+    )
+    assert.equal(buildCommitSearchQuery('x', opts({ matchCase: true })), 'x')
+    assert.equal(
+      buildCommitSearchQuery('', opts({ mode: 'content', matchCase: true })),
+      ''
+    )
+  })
+
   it('does not search code for empty text', () => {
     assert.equal(buildCommitSearchQuery('', opts({ mode: 'content' })), '')
   })
@@ -275,6 +314,7 @@ describe('buildCommitSearchQuery', () => {
       regex: null,
       file: 'dir/a b.ts',
       allBranches: true,
+      matchCase: false,
     })
   })
 })

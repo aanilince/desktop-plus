@@ -124,6 +124,16 @@ export class CommitSearchOptions extends React.Component<
           />
         </div>
 
+        {options.mode !== 'message' && (
+          <div className="commit-search-options-group">
+            <Checkbox
+              label="Match case"
+              value={options.matchCase ? CheckboxValue.On : CheckboxValue.Off}
+              onChange={this.onMatchCaseChanged}
+            />
+          </div>
+        )}
+
         {showAllBranches && (
           <div className="commit-search-options-group">
             <Checkbox
@@ -151,6 +161,10 @@ export class CommitSearchOptions extends React.Component<
 
   private onFileChanged = (file: string) => {
     this.props.onChange({ file })
+  }
+
+  private onMatchCaseChanged = (event: React.FormEvent<HTMLInputElement>) => {
+    this.props.onChange({ matchCase: event.currentTarget.checked })
   }
 
   private onAllBranchesChanged = (event: React.FormEvent<HTMLInputElement>) => {

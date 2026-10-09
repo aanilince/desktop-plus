@@ -6,6 +6,10 @@ export const RegexFilterPrefix = 'regex:'
 export const FileFilterPrefix = 'file:'
 /** A bare `scope:all` term makes the git-backed terms search all branches. */
 export const AllBranchesTerm = 'scope:all'
+/** A bare `case:match` term makes `content:` and `regex:` case-sensitive. */
+export const MatchCaseTerm = 'case:match'
+
+const flagTerms = [AllBranchesTerm, MatchCaseTerm]
 
 /**
  * Terms that can only be answered by asking git (they look at the diffs or
@@ -20,6 +24,8 @@ export interface IGitSearchTerms {
   readonly file: string | null
   /** Search every branch and tag instead of just what the views show */
   readonly allBranches: boolean
+  /** Match `content` and `regex` with their exact case (else ignore case) */
+  readonly matchCase: boolean
 }
 
 export interface ICommitSearchFilter {
@@ -80,7 +86,7 @@ export function quoteSearchValue(value: string) {
 export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
   const lowercaseQuery = query.toLowerCase()
   const hasGitPrefix =
-    lowercaseQuery.includes(AllBranchesTerm) ||
+    flagTerms.some(flag => lowercaseQuery.includes(flag)) ||
     gitPrefixes.some(([prefix]) => lowercaseQuery.includes(prefix))
 
   if (!hasGitPrefix && !lowercaseQuery.includes(AuthorFilterPrefix)) {
@@ -114,6 +120,7 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
     file: null,
   }
   let allBranches = false
+  let matchCase = false
 
   if (!hasGitPrefix) {
     lowercaseQuery.split(/\s+/).forEach(addTerm)
@@ -127,13 +134,15 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
         continue
       }
 
-      const afterScope = i + AllBranchesTerm.length
-      if (
-        lowercaseQuery.startsWith(AllBranchesTerm, i) &&
-        (afterScope >= query.length || /\s/.test(query[afterScope]))
-      ) {
-        allBranches = true
-        i = afterScope
+      const flag = flagTerms.find(
+        term =>
+          lowercaseQuery.startsWith(term, i) &&
+          (i + term.length >= query.length || /\s/.test(query[i + term.length]))
+      )
+      if (flag !== undefined) {
+        allBranches ||= flag === AllBranchesTerm
+        matchCase ||= flag === MatchCaseTerm
+        i += flag.length
         continue
       }
 
@@ -184,8 +193,8 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
   return {
     queryTextLowercase: textTerms.join(' '),
     authorEmailsLowercase: authorEmails,
-    // `scope:all` only widens a git search, it isn't a search of its own
-    gitTerms: hasGitTerms ? { ...valueTerms, allBranches } : null,
+    // `scope:all` and `case:match` only tune a git search, they aren't one
+    gitTerms: hasGitTerms ? { ...valueTerms, allBranches, matchCase } : null,
     gitMatchedShas: null,
   }
 }
@@ -242,12 +251,15 @@ export interface ICommitSearchOptions {
   readonly file: string
   /** Search all branches instead of just what the views show */
   readonly allBranches: boolean
+  /** Match the code searched for with its exact case (else ignore case) */
+  readonly matchCase: boolean
 }
 
 export const DefaultCommitSearchOptions: ICommitSearchOptions = {
   mode: 'message',
   file: '',
   allBranches: false,
+  matchCase: false,
 }
 
 /** Whether any option differs from the default (to flag the button as active). */
@@ -255,7 +267,8 @@ export function hasCustomCommitSearchOptions(options: ICommitSearchOptions) {
   return (
     options.mode !== DefaultCommitSearchOptions.mode ||
     options.file.trim() !== '' ||
-    options.allBranches
+    options.allBranches ||
+    options.matchCase
   )
 }
 
@@ -278,6 +291,7 @@ export function buildCommitSearchQuery(
 
   const terms = new Array<string>()
   let hasGitTerm = file !== ''
+  let searchesCode = false
 
   if (options.mode === 'message') {
     terms.push(text.trim())
@@ -296,6 +310,7 @@ export function buildCommitSearchQuery(
         options.mode === 'content' ? ContentFilterPrefix : RegexFilterPrefix
       terms.push(`${prefix}${quoteSearchValue(rest)}`)
       hasGitTerm = true
+      searchesCode = true
     }
   }
 
@@ -310,6 +325,10 @@ export function buildCommitSearchQuery(
     terms.push(AllBranchesTerm)
   }
 
+  if (options.matchCase && searchesCode) {
+    terms.push(MatchCaseTerm)
+  }
+
   return terms.filter(term => term !== '').join(' ')
 }
 
@@ -320,6 +339,7 @@ export function gitSearchTermsKey(terms: IGitSearchTerms): string {
     terms.regex,
     terms.file,
     terms.allBranches,
+    terms.matchCase,
   ])
 }
 

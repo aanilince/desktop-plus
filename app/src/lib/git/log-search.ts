@@ -43,9 +43,7 @@ export async function searchCommitShas(
   }
 
   const runs = await Promise.all(
-    pickaxes.map(pickaxe =>
-      runLogSearch(repository, pickaxe, terms.file, revisions)
-    )
+    pickaxes.map(pickaxe => runLogSearch(repository, pickaxe, terms, revisions))
   )
 
   return runs.reduce((acc, next) => {
@@ -62,13 +60,16 @@ export async function searchCommitShas(
 async function runLogSearch(
   repository: Repository,
   pickaxe: string | null,
-  file: string | null,
+  { file, matchCase }: IGitSearchTerms,
   revisions: ReadonlyArray<string> | 'all'
 ): Promise<ReadonlySet<string>> {
   const args = ['log', '--format=%H', '--no-color', '--no-show-signature']
 
   if (pickaxe !== null) {
     args.push(pickaxe)
+    if (!matchCase) {
+      args.push('--regexp-ignore-case')
+    }
   }
 
   // Users on Windows will type backslashes; git pathspecs use forward slashes.

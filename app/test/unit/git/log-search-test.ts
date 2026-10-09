@@ -15,6 +15,7 @@ const noTerms = {
   regex: null,
   file: null,
   allBranches: false,
+  matchCase: false,
 }
 
 async function shasOldestFirst(repository: Repository) {
@@ -66,14 +67,58 @@ describe('searchCommitShas', () => {
     assert.deepEqual([...shas], [c2])
   })
 
-  it('is case-sensitive for content, like git -S', async t => {
-    const { repository } = await setupHistory(t)
+  it('ignores case for content by default', async t => {
+    const { repository, c2 } = await setupHistory(t)
     const shas = await searchCommitShas(
       repository,
       { ...noTerms, content: 'NEEDLE' },
       ['HEAD']
     )
-    assert.equal(shas.size, 0)
+    assert.deepEqual([...shas], [c2])
+  })
+
+  it('ignores case for a regex by default', async t => {
+    const { repository, c2 } = await setupHistory(t)
+    const shas = await searchCommitShas(
+      repository,
+      { ...noTerms, regex: 'NEED.E' },
+      ['HEAD']
+    )
+    assert.deepEqual([...shas], [c2])
+  })
+
+  it('matches case for content when asked to', async t => {
+    const { repository, c2 } = await setupHistory(t)
+    const terms = { ...noTerms, matchCase: true }
+    const wrongCase = await searchCommitShas(
+      repository,
+      { ...terms, content: 'NEEDLE' },
+      ['HEAD']
+    )
+    const rightCase = await searchCommitShas(
+      repository,
+      { ...terms, content: 'needle' },
+      ['HEAD']
+    )
+    assert.equal(wrongCase.size, 0)
+    assert.deepEqual([...rightCase], [c2])
+  })
+
+  it('matches case for a regex when asked to', async t => {
+    const { repository, c2 } = await setupHistory(t)
+    const terms = { ...noTerms, matchCase: true }
+    const wrongCase = await searchCommitShas(
+      repository,
+      { ...terms, regex: 'NEED.E' },
+      ['HEAD']
+    )
+    const rightCase = await searchCommitShas(
+      repository,
+      { ...terms, regex: 'need.e' },
+      ['HEAD']
+    )
+    assert.equal(wrongCase.size, 0)
+    assert.deepEqual([...rightCase], [c2])
   })
 
   it('finds commits whose changed lines match a regex (-G)', async t => {
