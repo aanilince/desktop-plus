@@ -9,7 +9,14 @@ export const AllBranchesTerm = 'scope:all'
 /** A bare `case:match` term makes `content:` and `regex:` case-sensitive. */
 export const MatchCaseTerm = 'case:match'
 
-const flagTerms = [AllBranchesTerm, MatchCaseTerm]
+/**
+ * A bare `match:any` term makes the free text (the message search) and the
+ * `content:`/`regex:` terms alternatives: a commit matching any of them is
+ * shown. Without it all of them are required.
+ */
+export const MatchAnyTerm = 'match:any'
+
+const flagTerms = [AllBranchesTerm, MatchCaseTerm, MatchAnyTerm]
 
 /**
  * Terms that can only be answered by asking git (they look at the diffs or
@@ -26,6 +33,19 @@ export interface IGitSearchTerms {
   readonly allBranches: boolean
   /** Match `content` and `regex` with their exact case (else ignore case) */
   readonly matchCase: boolean
+  /**
+   * The free text, `content` and `regex` are alternatives (any one is enough)
+   * instead of all being required. `file` always restricts the others.
+   */
+  readonly matchAny: boolean
+}
+
+/** The commits git found for a filter's git terms. */
+export interface IGitMatchedShas {
+  /** For `content`/`regex`; null if the filter has neither. */
+  readonly pickaxe: ReadonlySet<string> | null
+  /** For `file`; null if the filter has none. */
+  readonly file: ReadonlySet<string> | null
 }
 
 export interface ICommitSearchFilter {
@@ -34,10 +54,10 @@ export interface ICommitSearchFilter {
   /** The git-backed terms in the query, or null if there are none. */
   readonly gitTerms: IGitSearchTerms | null
   /**
-   * The SHAs git reported for `gitTerms`, or null if they are not known (yet).
+   * What git reported for `gitTerms`, or null if it is not known (yet).
    * Only meaningful when `gitTerms` is not null.
    */
-  readonly gitMatchedShas: ReadonlySet<string> | null
+  readonly gitMatches: IGitMatchedShas | null
 }
 
 const emptyAuthorEmails: ReadonlySet<string> = new Set()
@@ -94,7 +114,7 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
       queryTextLowercase: lowercaseQuery,
       authorEmailsLowercase: emptyAuthorEmails,
       gitTerms: null,
-      gitMatchedShas: null,
+      gitMatches: null,
     }
   }
 
@@ -121,6 +141,7 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
   }
   let allBranches = false
   let matchCase = false
+  let matchAny = false
 
   if (!hasGitPrefix) {
     lowercaseQuery.split(/\s+/).forEach(addTerm)
@@ -142,6 +163,7 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
       if (flag !== undefined) {
         allBranches ||= flag === AllBranchesTerm
         matchCase ||= flag === MatchCaseTerm
+        matchAny ||= flag === MatchAnyTerm
         i += flag.length
         continue
       }
@@ -193,18 +215,21 @@ export function parseCommitSearchFilter(query: string): ICommitSearchFilter {
   return {
     queryTextLowercase: textTerms.join(' '),
     authorEmailsLowercase: authorEmails,
-    // `scope:all` and `case:match` only tune a git search, they aren't one
-    gitTerms: hasGitTerms ? { ...valueTerms, allBranches, matchCase } : null,
-    gitMatchedShas: null,
+    // `scope:all`, `case:match` and `match:any` only tune a git search, they
+    // aren't one
+    gitTerms: hasGitTerms
+      ? { ...valueTerms, allBranches, matchCase, matchAny }
+      : null,
+    gitMatches: null,
   }
 }
 
-/** Attach the SHAs git found for the filter's git terms. */
+/** Attach what git found for the filter's git terms. */
 export function withGitSearchMatches(
   filter: ICommitSearchFilter,
-  gitMatchedShas: ReadonlySet<string>
+  gitMatches: IGitMatchedShas
 ): ICommitSearchFilter {
-  return { ...filter, gitMatchedShas }
+  return { ...filter, gitMatches }
 }
 
 /** What git answered for a query's git terms, kept in the compare state. */
@@ -213,7 +238,7 @@ export interface IGitSearchMatches {
   readonly termsKey: string
   /** Which revisions were searched, to know when the answer is out of date */
   readonly scopeKey: string
-  readonly shas: ReadonlySet<string>
+  readonly shas: IGitMatchedShas
 }
 
 /**
@@ -235,18 +260,14 @@ export function resolveCommitSearchFilter(
   return filter
 }
 
-/** What the text typed in the search box is looked for in. */
-export type CommitSearchMode =
-  /** The commit message, author, tags and SHA */
-  | 'message'
-  /** The code the commit adds or removes, as exact text */
-  | 'content'
-  /** The code the commit adds or removes, as a regular expression */
-  | 'regex'
-
 /** The search settings chosen with buttons rather than typed in the box. */
 export interface ICommitSearchOptions {
-  readonly mode: CommitSearchMode
+  /** Look for the text in commit messages (and tags and SHAs) */
+  readonly message: boolean
+  /** Look for the text as exact text in the code the commit adds or removes */
+  readonly content: boolean
+  /** Look for the text as a regex in the code the commit adds or removes */
+  readonly regex: boolean
   /** Only commits touching this file (renames are followed). Empty: any. */
   readonly file: string
   /** Search all branches instead of just what the views show */
@@ -256,19 +277,31 @@ export interface ICommitSearchOptions {
 }
 
 export const DefaultCommitSearchOptions: ICommitSearchOptions = {
-  mode: 'message',
+  message: true,
+  content: false,
+  regex: true,
   file: '',
   allBranches: false,
   matchCase: false,
 }
 
+/**
+ * When the message is searched too, text shorter than this is not also
+ * searched for in the code: it would match nearly everything and make git read
+ * the whole history for every couple of letters typed.
+ */
+export const MinCodeSearchLengthWithMessage = 3
+
 /** Whether any option differs from the default (to flag the button as active). */
 export function hasCustomCommitSearchOptions(options: ICommitSearchOptions) {
+  const defaults = DefaultCommitSearchOptions
   return (
-    options.mode !== DefaultCommitSearchOptions.mode ||
+    options.message !== defaults.message ||
+    options.content !== defaults.content ||
+    options.regex !== defaults.regex ||
     options.file.trim() !== '' ||
-    options.allBranches ||
-    options.matchCase
+    options.allBranches !== defaults.allBranches ||
+    options.matchCase !== defaults.matchCase
   )
 }
 
@@ -277,40 +310,49 @@ export function hasCustomCommitSearchOptions(options: ICommitSearchOptions) {
  * buttons into the query string the filtering works on, so the box itself
  * never has to show keywords like `content:`.
  *
- * `author:` terms stay terms in every mode; the rest of the text becomes the
- * code to look for in the 'content' and 'regex' modes.
+ * The text is looked for in every place the options choose, and a commit
+ * matching any of them is shown. `author:` terms stay terms: they restrict the
+ * commits and are not part of the text searched for.
  */
 export function buildCommitSearchQuery(
   text: string,
   options: ICommitSearchOptions
 ): string {
+  // Turning every place off is not a search; fall back to the messages.
+  const inMessage = options.message || (!options.content && !options.regex)
   const file = options.file.trim()
-  if (options.mode === 'message' && file === '') {
+
+  const authorTerms = new Array<string>()
+  const code = text
+    .replace(/(^|\s)(author:\S+)/gi, (_match, _space, term: string) => {
+      authorTerms.push(term)
+      return ' '
+    })
+    .trim()
+
+  const codePrefixes = [
+    ...(options.content ? [ContentFilterPrefix] : []),
+    ...(options.regex ? [RegexFilterPrefix] : []),
+  ]
+  const searchesCode =
+    code !== '' &&
+    codePrefixes.length > 0 &&
+    !(inMessage && code.length < MinCodeSearchLengthWithMessage)
+
+  if (inMessage && !searchesCode && file === '') {
     return text
   }
 
   const terms = new Array<string>()
-  let hasGitTerm = file !== ''
-  let searchesCode = false
-
-  if (options.mode === 'message') {
+  if (inMessage) {
     terms.push(text.trim())
   } else {
-    const authorTerms = new Array<string>()
-    const rest = text
-      .replace(/(^|\s)(author:\S+)/gi, (_match, _space, term: string) => {
-        authorTerms.push(term)
-        return ' '
-      })
-      .trim()
-
     terms.push(...authorTerms)
-    if (rest !== '') {
-      const prefix =
-        options.mode === 'content' ? ContentFilterPrefix : RegexFilterPrefix
-      terms.push(`${prefix}${quoteSearchValue(rest)}`)
-      hasGitTerm = true
-      searchesCode = true
+  }
+
+  if (searchesCode) {
+    for (const prefix of codePrefixes) {
+      terms.push(`${prefix}${quoteSearchValue(code)}`)
     }
   }
 
@@ -321,7 +363,11 @@ export function buildCommitSearchQuery(
     )
   }
 
-  if (options.allBranches && hasGitTerm) {
+  if (searchesCode && (inMessage || codePrefixes.length > 1)) {
+    terms.push(MatchAnyTerm)
+  }
+
+  if (options.allBranches && (searchesCode || file !== '')) {
     terms.push(AllBranchesTerm)
   }
 
@@ -340,6 +386,7 @@ export function gitSearchTermsKey(terms: IGitSearchTerms): string {
     terms.file,
     terms.allBranches,
     terms.matchCase,
+    terms.matchAny,
   ])
 }
 
@@ -359,6 +406,15 @@ export function isCommitSearchFilterEmpty(filter: ICommitSearchFilter) {
   )
 }
 
+function messageMatches(commit: Commit, queryText: string) {
+  return (
+    commit.summary.toLowerCase().includes(queryText) ||
+    commit.body.toLowerCase().includes(queryText) ||
+    commit.tags.some(tag => tag.toLowerCase().startsWith(queryText)) ||
+    commit.sha.toLowerCase().startsWith(queryText)
+  )
+}
+
 /** Whether the given commit should be included in the results of the filter. */
 export function commitMatchesSearchFilter(
   commit: Commit | undefined,
@@ -368,17 +424,12 @@ export function commitMatchesSearchFilter(
     return false
   }
 
-  const { queryTextLowercase: queryText, authorEmailsLowercase: authorEmails } =
-    filter
-
-  // Until git answers, a git-backed query matches nothing rather than
-  // flashing results that would then disappear.
-  if (
-    filter.gitTerms !== null &&
-    (filter.gitMatchedShas === null || !filter.gitMatchedShas.has(commit.sha))
-  ) {
-    return false
-  }
+  const {
+    queryTextLowercase: queryText,
+    authorEmailsLowercase: authorEmails,
+    gitTerms,
+    gitMatches,
+  } = filter
 
   if (
     authorEmails.size > 0 &&
@@ -387,13 +438,34 @@ export function commitMatchesSearchFilter(
     return false
   }
 
-  return (
-    queryText.length === 0 ||
-    commit.summary.toLowerCase().includes(queryText) ||
-    commit.body.toLowerCase().includes(queryText) ||
-    commit.tags.some(tag => tag.toLowerCase().startsWith(queryText)) ||
-    commit.sha.toLowerCase().startsWith(queryText)
-  )
+  const matchesMessage =
+    queryText.length === 0 || messageMatches(commit, queryText)
+
+  if (gitTerms === null) {
+    return matchesMessage
+  }
+
+  // Until git answers, a file restriction can't be checked, so nothing is
+  // shown rather than flashing results that would then disappear.
+  if (gitTerms.file !== null) {
+    if (gitMatches?.file == null || !gitMatches.file.has(commit.sha)) {
+      return false
+    }
+  }
+
+  const searchesCode = gitTerms.content !== null || gitTerms.regex !== null
+  if (!searchesCode) {
+    return matchesMessage
+  }
+
+  const matchesCode = gitMatches?.pickaxe?.has(commit.sha) ?? false
+
+  if (gitTerms.matchAny) {
+    // The message can be checked at once; the code only once git has answered.
+    return matchesCode || (queryText.length > 0 && matchesMessage)
+  }
+
+  return matchesCode && matchesMessage
 }
 
 /**

@@ -62,6 +62,13 @@
     }
   }
 
+  .commit-search-options-hint {
+    margin: var(--spacing-half) 0 0;
+    max-width: 280px;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+  }
+
   .commit-search-options-footer {
     margin-top: var(--spacing);
   }

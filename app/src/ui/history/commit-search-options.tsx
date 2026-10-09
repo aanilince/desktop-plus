@@ -1,7 +1,6 @@
 import * as React from 'react'
 import classNames from 'classnames'
 import {
-  CommitSearchMode,
   DefaultCommitSearchOptions,
   hasCustomCommitSearchOptions,
   ICommitSearchOptions,
@@ -15,7 +14,6 @@ import {
   PopoverAnchorPosition,
   PopoverDecoration,
 } from '../lib/popover'
-import { RadioGroup } from '../lib/radio-group'
 import { FilePathInput } from './file-path-input'
 
 interface ICommitSearchOptionsProps {
@@ -37,13 +35,14 @@ interface ICommitSearchOptionsState {
   readonly isOpen: boolean
 }
 
-const modes: ReadonlyArray<CommitSearchMode> = ['message', 'content', 'regex']
+/** The places the text typed in the search box can be looked for in. */
+type SearchPlace = 'message' | 'content' | 'regex'
 
-const modeLabels: Record<CommitSearchMode, string> = {
-  message: 'Commit message',
-  content: 'Code changes (exact text)',
-  regex: 'Code changes (regex)',
-}
+const places: ReadonlyArray<{ readonly place: SearchPlace; label: string }> = [
+  { place: 'message', label: 'Commit message' },
+  { place: 'content', label: 'Code changes (exact text)' },
+  { place: 'regex', label: 'Code changes (regex)' },
+]
 
 /**
  * A button next to the commit search box that opens the options the search
@@ -55,6 +54,10 @@ export class CommitSearchOptions extends React.Component<
   ICommitSearchOptionsState
 > {
   private buttonRef: HTMLButtonElement | null = null
+  private placeHandlers = new Map<
+    SearchPlace,
+    (event: React.FormEvent<HTMLInputElement>) => void
+  >()
 
   public constructor(props: ICommitSearchOptionsProps) {
     super(props)
@@ -88,6 +91,8 @@ export class CommitSearchOptions extends React.Component<
 
   private renderPopover() {
     const { options, showAllBranches } = this.props
+    const checkedPlaces = places.filter(({ place }) => options[place]).length
+    const searchesCode = options.content || options.regex
 
     return (
       <Popover
@@ -108,13 +113,21 @@ export class CommitSearchOptions extends React.Component<
 
         <fieldset className="commit-search-options-group">
           <legend>Search in</legend>
-          <RadioGroup<CommitSearchMode>
-            ariaLabelledBy="commit-search-options-header"
-            selectedKey={options.mode}
-            radioButtonKeys={modes}
-            onSelectionChanged={this.onModeChanged}
-            renderRadioButtonLabelContents={this.renderModeLabel}
-          />
+          {places.map(({ place, label }) => (
+            <Checkbox
+              key={place}
+              label={label}
+              value={options[place] ? CheckboxValue.On : CheckboxValue.Off}
+              // At least one place has to stay checked
+              disabled={options[place] && checkedPlaces === 1}
+              onChange={this.getPlaceChangedHandler(place)}
+            />
+          ))}
+          <p className="commit-search-options-hint">
+            A commit is shown if it matches in any checked place.
+            {searchesCode &&
+              ' Searching code reads every commit, which is slow on a big history unless a file is chosen below.'}
+          </p>
         </fieldset>
 
         <div className="commit-search-options-group">
@@ -127,7 +140,7 @@ export class CommitSearchOptions extends React.Component<
           />
         </div>
 
-        {options.mode !== 'message' && (
+        {searchesCode && (
           <div className="commit-search-options-group">
             <Checkbox
               label="Match case"
@@ -156,10 +169,24 @@ export class CommitSearchOptions extends React.Component<
     )
   }
 
-  private renderModeLabel = (mode: CommitSearchMode) => modeLabels[mode]
+  private getPlaceChangedHandler(place: SearchPlace) {
+    let handler = this.placeHandlers.get(place)
+    if (handler === undefined) {
+      handler = event => {
+        const checked = event.currentTarget.checked
+        const { options } = this.props
+        const checkedPlaces = places.filter(p => options[p.place]).length
 
-  private onModeChanged = (mode: CommitSearchMode) => {
-    this.props.onChange({ mode })
+        // At least one place has to stay checked
+        if (!checked && options[place] && checkedPlaces === 1) {
+          return
+        }
+
+        this.props.onChange({ [place]: checked })
+      }
+      this.placeHandlers.set(place, handler)
+    }
+    return handler
   }
 
   private onFileChanged = (file: string) => {

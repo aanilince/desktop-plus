@@ -217,6 +217,7 @@ import {
   commitMatchesSearchFilter,
   DefaultCommitSearchOptions,
   ICommitSearchOptions,
+  gitSearchTermsKey,
   IGitSearchMatches,
   isCommitSearchFilterEmpty,
   parseCommitSearchFilter,
@@ -642,8 +643,13 @@ const InitialRepositoryIndicatorTimeout = 2 * 60 * 1000
 
 const MinimumFilteredCommitsToLoad = 50
 
-/** How long typing must pause before git is asked to search commit contents */
-const CommitSearchGitDebounceMs = 250
+/**
+ * How long typing must pause before git is asked to search the code of every
+ * commit, which on a big history takes seconds, and before it is asked for the
+ * (much quicker) commits touching a file.
+ */
+const CommitSearchCodeDebounceMs = 600
+const CommitSearchFileDebounceMs = 250
 
 const MaxInvalidFoldersToDisplay = 3
 
@@ -812,6 +818,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private currentMergeTreePromise: Promise<void> | null = null
   private currentCommitFilterPromise: Promise<void> | null = null
+
+  /**
+   * The search git is running for the commit search query's content:, regex:
+   * and file: terms. Kept so a newer query can stop it (a big history takes
+   * seconds) and so two callers asking for the same thing share one search.
+   */
+  private commitSearchGitSearch: {
+    readonly key: string
+    readonly controller: AbortController
+    readonly promise: Promise<IGitSearchMatches | 'superseded'>
+  } | null = null
 
   /** The function to resolve the current Open in Desktop flow. */
   private resolveOpenInDesktop:
@@ -2532,10 +2549,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // it makes sure git has answered the query's content:/regex:/file: terms.
     const query =
       this.repositoryStateCache.get(repository).compareState.commitSearchQuery
-    if (
-      (await this.updateCommitSearchGitMatches(repository, query)) ===
-      'superseded'
-    ) {
+    const gitMatches = this.updateCommitSearchGitMatches(repository, query)
+
+    if (this.showsMessageMatchesBeforeGitAnswers(query)) {
+      // Commits whose message matches don't need git, and the ones whose code
+      // matches appear (the graph re-filters on every update) once it answers.
+      gitMatches.catch(e => log.error('Could not search the commit code', e))
+    } else if ((await gitMatches) === 'superseded') {
       return
     }
 
@@ -2624,52 +2644,100 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   /**
+   * Whether the commits matching `query` through their message can be shown
+   * before git has answered for the rest: when the message and the code are
+   * alternatives and no file restricts both.
+   */
+  private showsMessageMatchesBeforeGitAnswers(query: string) {
+    const terms = parseCommitSearchFilter(query).gitTerms
+    return terms !== null && terms.matchAny && terms.file === null
+  }
+
+  /** Stop the search git is running for the commit search, if there is one. */
+  private stopCommitSearchGitSearch() {
+    this.commitSearchGitSearch?.controller.abort()
+    this.commitSearchGitSearch = null
+  }
+
+  /**
    * Make sure the compare state holds git's answer for the `content:`,
    * `regex:` and `file:` terms of `query` (dropping it if there are none).
    *
-   * Git is only asked once typing pauses, and a newer query abandons this one.
+   * Git is only asked once typing pauses, and a newer query stops this one.
    * The search covers the history tab's HEAD plus the commit graph's refs, so
    * both views can filter with the same answer.
    *
    * @returns the up to date matches (null if the query has no git terms), or
    *          'superseded' if a newer query arrived while waiting for git.
    */
-  private async updateCommitSearchGitMatches(
+  private updateCommitSearchGitMatches(
     repository: Repository,
     query: string
   ): Promise<IGitSearchMatches | null | 'superseded'> {
     const getCompareState = () =>
       this.repositoryStateCache.get(repository).compareState
-    const existingMatches = () => getCompareState().commitSearchGitMatches
 
     const terms = parseCommitSearchFilter(query).gitTerms
     if (terms === null) {
+      this.stopCommitSearchGitSearch()
       if (getCompareState().commitSearchGitMatches !== null) {
         this.repositoryStateCache.updateCompareState(repository, () => ({
           commitSearchGitMatches: null,
         }))
       }
-      return null
+      return Promise.resolve(null)
     }
 
-    const gitMatches = await findGitSearchMatches({
-      terms,
-      revisions: terms.allBranches
-        ? 'all'
-        : ['HEAD', ...getCompareState().commitGraphRefs],
-      existing: getCompareState().commitSearchGitMatches,
-      isStillCurrent: () => getCompareState().commitSearchQuery === query,
-      search: (t, revisions) => searchCommitShas(repository, t, revisions),
-      waitForTypingToPause: () => sleep(CommitSearchGitDebounceMs),
-    })
+    const revisions = terms.allBranches
+      ? 'all'
+      : ['HEAD', ...getCompareState().commitGraphRefs]
+    const key = `${gitSearchTermsKey(terms)}\0${
+      revisions === 'all' ? revisions : revisions.join('\0')
+    }`
 
-    if (gitMatches !== 'superseded' && gitMatches !== existingMatches()) {
-      this.repositoryStateCache.updateCompareState(repository, () => ({
-        commitSearchGitMatches: gitMatches,
-      }))
-      this.emitUpdate()
+    if (this.commitSearchGitSearch?.key === key) {
+      return this.commitSearchGitSearch.promise
     }
-    return gitMatches
+
+    this.stopCommitSearchGitSearch()
+    const controller = new AbortController()
+    const searchesCode = terms.content !== null || terms.regex !== null
+
+    const promise = (async () => {
+      try {
+        const gitMatches = await findGitSearchMatches({
+          terms,
+          revisions,
+          existing: getCompareState().commitSearchGitMatches,
+          signal: controller.signal,
+          search: (t, r, signal) => searchCommitShas(repository, t, r, signal),
+          waitForTypingToPause: () =>
+            sleep(
+              searchesCode
+                ? CommitSearchCodeDebounceMs
+                : CommitSearchFileDebounceMs
+            ),
+        })
+
+        if (
+          gitMatches !== 'superseded' &&
+          gitMatches !== getCompareState().commitSearchGitMatches
+        ) {
+          this.repositoryStateCache.updateCompareState(repository, () => ({
+            commitSearchGitMatches: gitMatches,
+          }))
+          this.emitUpdate()
+        }
+        return gitMatches
+      } finally {
+        if (this.commitSearchGitSearch?.controller === controller) {
+          this.commitSearchGitSearch = null
+        }
+      }
+    })()
+
+    this.commitSearchGitSearch = { key, controller, promise }
+    return promise
   }
 
   public async _updateCommitSearchQuery(
@@ -2684,23 +2752,65 @@ export class AppStore extends TypedBaseStore<IAppState> {
       await this.currentCommitFilterPromise
     }
 
-    if (
+    const isSuperseded = () =>
       this.repositoryStateCache.get(repository).compareState
         .commitSearchQuery !== query
-    ) {
+
+    if (isSuperseded()) {
       // A newer search query superseded this one while we were waiting
       return
     }
 
-    // Waiting for git can take a while, so only read the state afterwards.
-    const gitMatches = await this.updateCommitSearchGitMatches(
+    // Git works in the background while we may already have something to show
+    const gitMatchesPromise = this.updateCommitSearchGitMatches(
       repository,
       query
     )
-    if (gitMatches === 'superseded') {
+    gitMatchesPromise.catch(() => {})
+
+    const showsMessageMatchesFirst =
+      this.showsMessageMatchesBeforeGitAnswers(query)
+    if (showsMessageMatchesFirst) {
+      // The commits whose message matches don't depend on git: show them now
+      // and add the ones whose code matches when git has answered.
+      await this.applyCommitSearch(
+        repository,
+        query,
+        this.repositoryStateCache.get(repository).compareState
+          .commitSearchGitMatches,
+        true
+      )
+    }
+
+    const gitMatches = await gitMatchesPromise
+    if (gitMatches === 'superseded' || isSuperseded()) {
       return
     }
 
+    await this.applyCommitSearch(
+      repository,
+      query,
+      gitMatches,
+      // After the early pass the shown list lacks the code matches, so it
+      // can't be narrowed any further: start again from every commit.
+      !showsMessageMatchesFirst
+    )
+  }
+
+  /**
+   * Filter the history list with `query` (and what git found for it) and load
+   * more commits if too few match.
+   *
+   * @param allowNarrowing Whether the commits already shown for a shorter
+   *                       version of the query may be filtered further instead
+   *                       of starting from every loaded commit.
+   */
+  private async applyCommitSearch(
+    repository: Repository,
+    query: string,
+    gitMatches: IGitSearchMatches | null,
+    allowNarrowing: boolean
+  ): Promise<void> {
     const state = this.repositoryStateCache.get(repository)
     const compareState = state.compareState
     if (compareState.commitSearchQuery !== query) {
@@ -2708,10 +2818,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     const searchFilter = resolveCommitSearchFilter(query, gitMatches)
-    const isIncrementalSearch = canNarrowExistingResults(
-      compareState.filteredHistoryCommitSearchQuery,
-      query
-    )
+    const isIncrementalSearch =
+      allowNarrowing &&
+      canNarrowExistingResults(
+        compareState.filteredHistoryCommitSearchQuery,
+        query
+      )
     const candidateCommitSHAs = isIncrementalSearch
       ? compareState.filteredHistoryCommitSHAs
       : compareState.allHistoryCommitSHAs

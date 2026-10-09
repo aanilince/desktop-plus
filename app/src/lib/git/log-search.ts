@@ -1,6 +1,6 @@
 import { git } from './core'
 import { Repository } from '../../models/repository'
-import { IGitSearchTerms } from '../commit-search-filter'
+import { IGitMatchedShas, IGitSearchTerms } from '../commit-search-filter'
 
 /** Characters that make a `file:` term a pathspec glob instead of one path. */
 const globCharacters = /[*?[]/
@@ -15,45 +15,73 @@ const globCharacters = /[*?[]/
  *                 renames (`--follow`); a path with glob characters is passed
  *                 as a pathspec and is not followed.
  *
- * Several terms must all match, so each pickaxe runs on its own (git does not
- * allow -S and -G together) and the results are intersected.
+ * The code searches (`pickaxe`) are answered apart from the file restriction
+ * (`file`) so a caller can combine them with a search git cannot do, the
+ * message search. When a file is given the code searches only look at that
+ * file, which also makes them far faster than reading the whole history.
+ *
+ * Several code searches are all required, or any one of them with
+ * `terms.matchAny`; each runs on its own because git does not allow -S and -G
+ * together.
  *
  * The whole history is searched, not just the part of it that is loaded in the
  * UI, so the answer does not depend on how far the user has scrolled.
  *
- * An unusable query (unborn HEAD, invalid regex) matches nothing.
+ * An unusable query (unborn HEAD, invalid regex) matches nothing, and so does
+ * a search that was aborted.
  *
  * @param revisions Revisions to search from, e.g. `['HEAD']`. Pass `'all'` to
  *                  search every branch and tag instead.
+ * @param signal    Stops the git processes when aborted (a search of a big
+ *                  history can take many seconds).
  */
 export async function searchCommitShas(
   repository: Repository,
   terms: IGitSearchTerms,
-  revisions: ReadonlyArray<string> | 'all'
-): Promise<ReadonlySet<string>> {
-  const pickaxes = new Array<string | null>()
+  revisions: ReadonlyArray<string> | 'all',
+  signal?: AbortSignal
+): Promise<IGitMatchedShas> {
+  const pickaxes = new Array<string>()
   if (terms.content !== null) {
     pickaxes.push(`-S${terms.content}`)
   }
   if (terms.regex !== null) {
     pickaxes.push(`-G${terms.regex}`)
   }
-  if (pickaxes.length === 0) {
-    pickaxes.push(null)
+
+  const [pickaxeRuns, file] = await Promise.all([
+    Promise.all(
+      pickaxes.map(pickaxe =>
+        runLogSearch(repository, pickaxe, terms, revisions, signal)
+      )
+    ),
+    terms.file === null
+      ? null
+      : runLogSearch(repository, null, terms, revisions, signal),
+  ])
+
+  return {
+    pickaxe:
+      pickaxeRuns.length === 0
+        ? null
+        : combine(pickaxeRuns, terms.matchAny ? 'union' : 'intersection'),
+    file,
   }
+}
 
-  const runs = await Promise.all(
-    pickaxes.map(pickaxe => runLogSearch(repository, pickaxe, terms, revisions))
-  )
-
-  return runs.reduce((acc, next) => {
-    const intersection = new Set<string>()
-    for (const sha of acc) {
-      if (next.has(sha)) {
-        intersection.add(sha)
-      }
+function combine(
+  sets: ReadonlyArray<ReadonlySet<string>>,
+  how: 'union' | 'intersection'
+): ReadonlySet<string> {
+  return sets.reduce((acc, next) => {
+    const result = new Set<string>()
+    if (how === 'union') {
+      acc.forEach(sha => result.add(sha))
+      next.forEach(sha => result.add(sha))
+    } else {
+      acc.forEach(sha => next.has(sha) && result.add(sha))
     }
-    return intersection
+    return result
   })
 }
 
@@ -61,7 +89,8 @@ async function runLogSearch(
   repository: Repository,
   pickaxe: string | null,
   { file, matchCase }: IGitSearchTerms,
-  revisions: ReadonlyArray<string> | 'all'
+  revisions: ReadonlyArray<string> | 'all',
+  signal: AbortSignal | undefined
 ): Promise<ReadonlySet<string>> {
   const args = ['log', '--format=%H', '--no-color', '--no-show-signature']
 
@@ -98,14 +127,24 @@ async function runLogSearch(
     args.push(isGlob ? path : `:(literal)${path}`)
   }
 
-  const result = await git(args, repository.path, 'searchCommitShas', {
-    // 128: unborn HEAD or an invalid -G regex
-    successExitCodes: new Set([0, 128]),
-  })
+  try {
+    const result = await git(args, repository.path, 'searchCommitShas', {
+      // 128: unborn HEAD or an invalid -G regex
+      successExitCodes: new Set([0, 128]),
+      signal,
+    })
 
-  if (result.exitCode === 128) {
-    return new Set()
+    if (result.exitCode === 128) {
+      return new Set()
+    }
+
+    return new Set(result.stdout.split('\n').filter(sha => sha.length > 0))
+  } catch (e) {
+    // An aborted search is not an error: whoever aborted it no longer wants
+    // the answer.
+    if (signal?.aborted) {
+      return new Set()
+    }
+    throw e
   }
-
-  return new Set(result.stdout.split('\n').filter(sha => sha.length > 0))
 }

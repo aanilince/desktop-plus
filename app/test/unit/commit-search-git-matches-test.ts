@@ -3,6 +3,8 @@ import assert from 'node:assert'
 import { findGitSearchMatches } from '../../src/lib/commit-search-git-matches'
 import {
   gitSearchTermsKey,
+  IGitMatchedShas,
+  IGitSearchMatches,
   IGitSearchTerms,
 } from '../../src/lib/commit-search-filter'
 
@@ -12,29 +14,47 @@ const terms: IGitSearchTerms = {
   file: null,
   allBranches: false,
   matchCase: false,
+  matchAny: false,
 }
 
-function setup(overrides: {
-  isStillCurrent?: () => boolean
-  existing?: Parameters<typeof findGitSearchMatches>[0]['existing']
-  revisions?: Parameters<typeof findGitSearchMatches>[0]['revisions']
-  searchResult?: ReadonlySet<string>
-}) {
+const answer = (...shas: string[]): IGitMatchedShas => ({
+  pickaxe: new Set(shas),
+  file: null,
+})
+
+function setup(
+  overrides: {
+    existing?: IGitSearchMatches | null
+    revisions?: ReadonlyArray<string> | 'all'
+    controller?: AbortController
+    onWait?: () => void
+    onSearch?: () => void
+  } = {}
+) {
+  const controller = overrides.controller ?? new AbortController()
   const calls = { search: 0, waits: 0 }
+  const received: { signal: AbortSignal | null } = { signal: null }
   const options = {
     terms,
     revisions: overrides.revisions ?? ['HEAD'],
     existing: overrides.existing ?? null,
-    isStillCurrent: overrides.isStillCurrent ?? (() => true),
-    search: async () => {
+    signal: controller.signal,
+    search: async (
+      _terms: IGitSearchTerms,
+      _revisions: ReadonlyArray<string> | 'all',
+      signal: AbortSignal
+    ) => {
       calls.search++
-      return overrides.searchResult ?? new Set(['abc'])
+      received.signal = signal
+      overrides.onSearch?.()
+      return answer('abc')
     },
     waitForTypingToPause: async () => {
       calls.waits++
+      overrides.onWait?.()
     },
   }
-  return { calls, options }
+  return { calls, options, controller, received }
 }
 
 describe('findGitSearchMatches', () => {
@@ -48,16 +68,23 @@ describe('findGitSearchMatches', () => {
     }
     assert.equal(result.termsKey, gitSearchTermsKey(terms))
     assert.equal(result.scopeKey, 'HEAD\0refs/heads/x')
-    assert.deepEqual([...result.shas], ['abc'])
+    assert.deepEqual([...(result.shas.pickaxe ?? [])], ['abc'])
     assert.equal(calls.search, 1)
     assert.equal(calls.waits, 1)
+  })
+
+  it('lets git know when the search is no longer wanted', async () => {
+    const { options, controller, received } = setup()
+    await findGitSearchMatches(options)
+
+    assert.equal(received.signal, controller.signal)
   })
 
   it('reuses an existing answer for the same terms and scope', async () => {
     const existing = {
       termsKey: gitSearchTermsKey(terms),
       scopeKey: 'HEAD',
-      shas: new Set(['old']),
+      shas: answer('old'),
     }
     const { calls, options } = setup({ existing })
     const result = await findGitSearchMatches(options)
@@ -71,7 +98,7 @@ describe('findGitSearchMatches', () => {
     const existing = {
       termsKey: gitSearchTermsKey(terms),
       scopeKey: 'HEAD',
-      shas: new Set(['old']),
+      shas: answer('old'),
     }
     const { calls, options } = setup({
       existing,
@@ -85,7 +112,7 @@ describe('findGitSearchMatches', () => {
     const existing = {
       termsKey: gitSearchTermsKey({ ...terms, content: 'bar' }),
       scopeKey: 'HEAD',
-      shas: new Set(['old']),
+      shas: answer('old'),
     }
     const { calls, options } = setup({ existing })
     await findGitSearchMatches(options)
@@ -102,7 +129,9 @@ describe('findGitSearchMatches', () => {
   })
 
   it('does not ask git if the query changed while typing', async () => {
-    const { calls, options } = setup({ isStillCurrent: () => false })
+    const { calls, options, controller } = setup({
+      onWait: () => controller.abort(),
+    })
     const result = await findGitSearchMatches(options)
 
     assert.equal(result, 'superseded')
@@ -110,14 +139,9 @@ describe('findGitSearchMatches', () => {
   })
 
   it('drops the answer if the query changed while git was working', async () => {
-    let current = true
-    const { calls, options } = setup({ isStillCurrent: () => current })
-    const search = options.search
-    options.search = async () => {
-      const shas = await search()
-      current = false
-      return shas
-    }
+    const { calls, options, controller } = setup({
+      onSearch: () => controller.abort(),
+    })
     const result = await findGitSearchMatches(options)
 
     assert.equal(result, 'superseded')

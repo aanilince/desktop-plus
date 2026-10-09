@@ -1,5 +1,6 @@
 import {
   gitSearchTermsKey,
+  IGitMatchedShas,
   IGitSearchMatches,
   IGitSearchTerms,
 } from './commit-search-filter'
@@ -13,14 +14,18 @@ interface IFindGitSearchMatchesOptions {
   /** The answer the state already holds, if any. */
   readonly existing: IGitSearchMatches | null
 
-  /** Whether the query being answered is still the one the user wants. */
-  readonly isStillCurrent: () => boolean
+  /**
+   * Aborted when the query being answered is no longer the one the user wants,
+   * so a search that is still running can be stopped.
+   */
+  readonly signal: AbortSignal
 
-  /** Ask git for the SHAs matching the terms. */
+  /** Ask git for the commits matching the terms. */
   readonly search: (
     terms: IGitSearchTerms,
-    revisions: ReadonlyArray<string> | 'all'
-  ) => Promise<ReadonlySet<string>>
+    revisions: ReadonlyArray<string> | 'all',
+    signal: AbortSignal
+  ) => Promise<IGitMatchedShas>
 
   /** Resolves once typing has paused, so git isn't asked on every keystroke. */
   readonly waitForTypingToPause: () => Promise<void>
@@ -37,7 +42,7 @@ export async function findGitSearchMatches({
   terms,
   revisions,
   existing,
-  isStillCurrent,
+  signal,
   search,
   waitForTypingToPause,
 }: IFindGitSearchMatchesOptions): Promise<IGitSearchMatches | 'superseded'> {
@@ -49,12 +54,12 @@ export async function findGitSearchMatches({
   }
 
   await waitForTypingToPause()
-  if (!isStillCurrent()) {
+  if (signal.aborted) {
     return 'superseded'
   }
 
-  const shas = await search(terms, revisions)
-  if (!isStillCurrent()) {
+  const shas = await search(terms, revisions, signal)
+  if (signal.aborted) {
     return 'superseded'
   }
 
