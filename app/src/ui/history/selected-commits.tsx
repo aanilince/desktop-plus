@@ -17,6 +17,7 @@ import {
   RevealInFileManagerLabel,
   OpenWithDefaultProgramLabel,
   CopyRelativeFilePathLabel,
+  ShowFileHistoryLabel,
   CopySelectedPathsLabel,
   CopySelectedRelativePathsLabel,
 } from '../lib/context-menu'
@@ -523,6 +524,13 @@ export class SelectedCommits extends DiffPresentationStateComponent<
       },
       { type: 'separator' },
       ...copyPathItems,
+      { type: 'separator' },
+      {
+        label: ShowFileHistoryLabel,
+        action: () =>
+          this.props.dispatcher.showFileHistory(repository, file.path),
+        enabled: !isMultiSelect,
+      },
       { type: 'separator' },
     ]
 

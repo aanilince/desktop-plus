@@ -38,11 +38,14 @@ import {
 import { CommitGraphCommitListItem } from './commit-graph-commit-list-item'
 import { getAvatarUserFromAuthor, IAvatarUser } from '../../models/avatar'
 import { CommitGraphFilterTextBox } from './commit-graph-filter-text-box'
+import { CommitSearchOptions } from './commit-search-options'
 import {
   AuthorFilterPrefix,
   commitMatchesSearchFilter,
   isCommitSearchFilterEmpty,
-  parseCommitSearchFilter,
+  ICommitSearchOptions,
+  IGitSearchMatches,
+  resolveCommitSearchFilter,
 } from '../../lib/commit-search-filter'
 
 type CommitGraphBranchGroup =
@@ -356,9 +359,10 @@ export class CommitGraphSidebar extends React.Component<
     (
       commitSHAs: ReadonlyArray<string>,
       commitSearchQuery: string,
+      gitMatches: IGitSearchMatches | null,
       commitLookup: Map<string, Commit>
     ): ReadonlyArray<string> => {
-      const filter = parseCommitSearchFilter(commitSearchQuery)
+      const filter = resolveCommitSearchFilter(commitSearchQuery, gitMatches)
 
       if (isCommitSearchFilterEmpty(filter)) {
         return commitSHAs
@@ -567,18 +571,21 @@ export class CommitGraphSidebar extends React.Component<
     this.commitGraph_ensureLoaded()
 
     // A search made in graph mode doesn't filter the list, so catch it up
-    const { commitSearchQuery, filteredHistoryCommitSearchQuery } =
-      this.props.compareState
+    const {
+      commitSearchQuery,
+      commitSearchText,
+      filteredHistoryCommitSearchQuery,
+    } = this.props.compareState
     if (
       this.state.commitGraphViewMode === CommitHistoryViewMode.List &&
       commitSearchQuery !== filteredHistoryCommitSearchQuery
     ) {
-      void this.onSearchList(commitSearchQuery)
+      void this.onSearchList(commitSearchText)
     }
 
     // Lazy-load authors when the search box is focused, unless the query already relies on them
     if (
-      this.props.compareState.commitSearchQuery
+      this.props.compareState.commitSearchText
         .toLowerCase()
         .includes(AuthorFilterPrefix)
     ) {
@@ -612,18 +619,28 @@ export class CommitGraphSidebar extends React.Component<
       <div id="compare-view" role="tabpanel" aria-labelledby="history-tab">
         <div className="commitGraph-view-toolbar">
           <div className="commit-search-form">
-            <CommitGraphFilterTextBox
-              ariaLabel="Commit filter"
-              type="search"
-              symbol={this.state.isSearching ? syncClockwise : octicons.search}
-              symbolClassName={this.state.isSearching ? 'spin' : undefined}
-              placeholder={__DARWIN__ ? 'Search Commits' : 'Search commits'}
-              currentQuery={this.props.compareState.commitSearchQuery}
-              filterAuthorsList={this.filterAuthorsList}
-              accounts={this.props.accounts}
-              onFocus={this.commitGraph_loadFilterAuthors}
-              onSearchSubmitted={this.onCommitSearchSubmitted}
-            />
+            <div className="commit-search-row">
+              <CommitSearchOptions
+                options={this.props.compareState.commitSearchOptions}
+                showAllBranches={true}
+                onChange={this.onCommitSearchOptionsChanged}
+                loadFilePaths={this.loadFilePaths}
+              />
+              <CommitGraphFilterTextBox
+                ariaLabel="Commit filter"
+                type="search"
+                symbol={
+                  this.state.isSearching ? syncClockwise : octicons.search
+                }
+                symbolClassName={this.state.isSearching ? 'spin' : undefined}
+                placeholder={__DARWIN__ ? 'Search Commits' : 'Search commits'}
+                currentQuery={this.props.compareState.commitSearchText}
+                filterAuthorsList={this.filterAuthorsList}
+                accounts={this.props.accounts}
+                onFocus={this.commitGraph_loadFilterAuthors}
+                onSearchSubmitted={this.onCommitSearchSubmitted}
+              />
+            </div>
           </div>
           {this.commitGraph_renderViewModeSwitch()}
         </div>
@@ -972,6 +989,7 @@ export class CommitGraphSidebar extends React.Component<
     const commitSHAs = this.commitGraph_getFilteredCommitSHAsForState(
       this.props.compareState.commitGraphCommitSHAs,
       this.props.compareState.commitSearchQuery,
+      this.props.compareState.commitSearchGitMatches,
       this.props.commitLookup
     )
 
@@ -1214,20 +1232,20 @@ export class CommitGraphSidebar extends React.Component<
 
   private commitGraph_onListModeClicked = () => {
     commitGraph_setStoredViewMode(CommitHistoryViewMode.List)
-    const { commitSearchQuery } = this.props.compareState
+    const { commitSearchText } = this.props.compareState
 
     this.setState({ commitGraphViewMode: CommitHistoryViewMode.List }, () => {
-      void this.onSearchList(commitSearchQuery)
+      void this.onSearchList(commitSearchText)
     })
   }
 
   private commitGraph_onTreeModeClicked = () => {
     commitGraph_setStoredViewMode(CommitHistoryViewMode.Graph)
-    const { commitSearchQuery } = this.props.compareState
+    const { commitSearchText } = this.props.compareState
 
     this.setState({ commitGraphViewMode: CommitHistoryViewMode.Graph }, () => {
       this.commitGraph_ensureLoaded()
-      void this.onSearchGraph(commitSearchQuery)
+      void this.onSearchGraph(commitSearchText)
     })
   }
 
@@ -1377,8 +1395,8 @@ export class CommitGraphSidebar extends React.Component<
   }
 
   private onSearchGraph = async (text: string) => {
-    this.props.dispatcher.updateCompareForm(this.props.repository, {
-      commitSearchQuery: text,
+    this.props.dispatcher.updateCommitSearchInputs(this.props.repository, {
+      text,
     })
 
     const stopSearching = this.startedSearching()
@@ -1402,6 +1420,43 @@ export class CommitGraphSidebar extends React.Component<
       )
     } catch (error) {
       console.error('Error while filtering commit list:', error)
+    } finally {
+      stopSearching()
+    }
+  }
+
+  private loadFilePaths = () =>
+    this.props.dispatcher.getTrackedFilePaths(this.props.repository)
+
+  private onCommitSearchOptionsChanged = async (
+    options: Partial<ICommitSearchOptions>
+  ) => {
+    if (this.state.commitGraphViewMode !== CommitHistoryViewMode.Graph) {
+      const stopSearching = this.startedSearching()
+      try {
+        await this.props.dispatcher.setCommitSearchOptions(
+          this.props.repository,
+          options
+        )
+      } catch (error) {
+        console.error('Error while filtering commit list:', error)
+      } finally {
+        stopSearching()
+      }
+      return
+    }
+
+    this.props.dispatcher.updateCommitSearchInputs(this.props.repository, {
+      options,
+    })
+
+    const stopSearching = this.startedSearching()
+    try {
+      await this.props.dispatcher.commitGraph_ensureEnoughFilteredCommits(
+        this.props.repository
+      )
+    } catch (error) {
+      console.error('Error while filtering commits graph:', error)
     } finally {
       stopSearching()
     }

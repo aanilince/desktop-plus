@@ -19,6 +19,8 @@ import { IBranchListItem } from '../branches/group-branches'
 import { TabBar } from '../tab-bar'
 import { CompareBranchListItem } from './compare-branch-list-item'
 import { FancyTextBox } from '../lib/fancy-text-box'
+import { CommitSearchOptions } from './commit-search-options'
+import { ICommitSearchOptions } from '../../lib/commit-search-filter'
 import * as octicons from '../octicons/octicons.generated'
 import { SelectionSource } from '../lib/filter-list'
 import { IMatches } from '../../lib/fuzzy-find'
@@ -185,19 +187,27 @@ export class CompareSidebar extends React.Component<
   }
 
   private renderHistoryView() {
-    const { commitSearchQuery } = this.props.compareState
+    const { commitSearchText, commitSearchOptions } = this.props.compareState
     return (
       <div id="compare-view" role="tabpanel" aria-labelledby="compare-tab">
         <div className="commit-search-form">
-          <FancyTextBox
-            ariaLabel="Commit filter"
-            type="search"
-            symbol={this.state.isSearching ? syncClockwise : octicons.search}
-            symbolClassName={this.state.isSearching ? 'spin' : undefined}
-            placeholder={__DARWIN__ ? 'Search Commits' : 'Search commits'}
-            value={commitSearchQuery}
-            onValueChanged={this.onCommitSearchQueryChanged}
-          />
+          <div className="commit-search-row">
+            <CommitSearchOptions
+              options={commitSearchOptions}
+              showAllBranches={false}
+              onChange={this.onCommitSearchOptionsChanged}
+              loadFilePaths={this.loadFilePaths}
+            />
+            <FancyTextBox
+              ariaLabel="Commit filter"
+              type="search"
+              symbol={this.state.isSearching ? syncClockwise : octicons.search}
+              symbolClassName={this.state.isSearching ? 'spin' : undefined}
+              placeholder={__DARWIN__ ? 'Search Commits' : 'Search commits'}
+              value={commitSearchText}
+              onValueChanged={this.onCommitSearchQueryChanged}
+            />
+          </div>
         </div>
 
         {this.renderCommitList()}
@@ -630,6 +640,20 @@ export class CompareSidebar extends React.Component<
     await this.props.dispatcher.setCommitSearchQuery(
       this.props.repository,
       text
+    )
+    this.setState({ isSearching: false })
+  }
+
+  private loadFilePaths = () =>
+    this.props.dispatcher.getTrackedFilePaths(this.props.repository)
+
+  private onCommitSearchOptionsChanged = async (
+    options: Partial<ICommitSearchOptions>
+  ) => {
+    this.setState({ isSearching: true })
+    await this.props.dispatcher.setCommitSearchOptions(
+      this.props.repository,
+      options
     )
     this.setState({ isSearching: false })
   }

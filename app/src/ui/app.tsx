@@ -1007,7 +1007,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       RepositorySectionTab.History
     )
 
-    this.props.dispatcher.setCommitSearchQuery(state.repository, '')
+    this.props.dispatcher.clearCommitSearch(state.repository)
 
     if (shouldFocusHistory) {
       this.repositoryViewRef.current?.setFocusHistoryNeeded()
