@@ -1885,7 +1885,10 @@ export class FilterChangesList extends React.Component<
               this.props.fileListFilter.isNewFile ||
               this.props.fileListFilter.isModifiedFile ||
               this.props.fileListFilter.isDeletedFile ||
-              this.props.fileListFilter.isExcludedFromCommit
+              this.props.fileListFilter.isExcludedFromCommit ||
+              // Regex filtering isn't done by the list's own text matching
+              (this.props.fileListFilter.useRegex &&
+                hasActiveFilters(this.props.fileListFilter))
                 ? this.applyFilters
                 : undefined
             }
