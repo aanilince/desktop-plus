@@ -4,7 +4,7 @@ import { join } from 'path'
 
 /**
  * The standalone runtime only needs `prebuilds/<platform>-<arch>`; everything
- * here exists for the Copilot CLI or for hosting extensions. Desktop Plus
+ * here exists for the Copilot CLI or for hosting extensions. Pickaxe
  * creates every session with `availableTools: []` and rejects all permission
  * requests (see `copilot-store.ts`), so no tool ever spawns a search binary or
  * an MCP server, and it registers no extensions. Some entries only ship on

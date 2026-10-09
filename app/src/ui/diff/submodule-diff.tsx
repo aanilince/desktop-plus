@@ -196,8 +196,8 @@ export class SubmoduleDiff extends React.Component<ISubmoduleDiffProps> {
     return (
       <span>
         <SuggestedAction
-          title="Open this submodule on Desktop Plus"
-          description="You can open this submodule on Desktop Plus as a normal repository to manage and commit any changes in it."
+          title="Open this submodule on Pickaxe"
+          description="You can open this submodule on Pickaxe as a normal repository to manage and commit any changes in it."
           buttonText={__DARWIN__ ? 'Open Repository' : 'Open repository'}
           icon={octicons.repo}
           type="primary"

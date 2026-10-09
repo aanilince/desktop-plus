@@ -3,7 +3,7 @@
     "type": "git",
     "url": "https://github.com/pol-rivero/desktop-plus.git"
   },
-  "description": "Desktop Plus build dependencies",
+  "description": "Pickaxe build dependencies",
   "scripts": {
     "cli": "ts-node app/src/cli/main.ts",
     "check:eslint": "tsc -P eslint-rules/",

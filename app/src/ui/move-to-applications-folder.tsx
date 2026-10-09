@@ -35,7 +35,7 @@ export class MoveToApplicationsFolder extends React.Component<
   public render() {
     return (
       <Dialog
-        title="Move Desktop Plus to the Applications folder?"
+        title="Move Pickaxe to the Applications folder?"
         id="move-to-applications-folder"
         backdropDismissable={false}
         onDismissed={this.props.onDismissed}
@@ -44,13 +44,13 @@ export class MoveToApplicationsFolder extends React.Component<
       >
         <DialogContent>
           <p>
-            We've detected that you're not running Desktop Plus from the
-            Applications folder of your machine. This could cause problems with
-            the app, including impacting your ability to sign in.
+            We've detected that you're not running Pickaxe from the Applications
+            folder of your machine. This could cause problems with the app,
+            including impacting your ability to sign in.
           </p>
           <p>
-            Do you want to move Desktop Plus to the Applications folder now?
-            This will also restart the app.
+            Do you want to move Pickaxe to the Applications folder now? This
+            will also restart the app.
           </p>
           <div>
             <Checkbox
@@ -74,7 +74,7 @@ export class MoveToApplicationsFolder extends React.Component<
       <DialogFooter>
         <OkCancelButtonGroup
           okButtonText="Move and Restart"
-          okButtonTitle="This will move Desktop Plus to the Applications folder in your machine and restart the app."
+          okButtonTitle="This will move Pickaxe to the Applications folder in your machine and restart the app."
           cancelButtonText="Not Now"
           onCancelButtonClick={this.onNotNow}
         />

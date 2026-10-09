@@ -5,7 +5,7 @@ import { LinkButton } from '../lib/link-button'
 import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { RichText } from '../lib/rich-text'
 import { shell } from '../../lib/app-shell'
-import { DesktopPlusReleaseNotesUri } from '../lib/releases'
+import { ReleaseNotesUri } from '../lib/releases'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { DesktopFakeRepository } from '../../lib/desktop-fake-repository'
 import { SandboxedMarkdown } from '../lib/sandboxed-markdown'
@@ -200,7 +200,7 @@ export class ReleaseNotes extends React.Component<IReleaseNotesProps, {}> {
   }
 
   private showAllReleaseNotes = () => {
-    shell.openExternal(DesktopPlusReleaseNotesUri)
+    shell.openExternal(ReleaseNotesUri)
   }
 
   private onMarkdownLinkClicked = (url: string) => {

@@ -5,26 +5,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for submitting a bug report! This issue tracker is for [Desktop Plus](https://github.com/desktop-plus/desktop-plus). Please search the issue tracker to see if there is an existing issue for the bug you are reporting.
-  - type: checkboxes
-    id: ai-policy-acknowledgement
-    attributes:
-      label: AI Policy Acknowledgement
-      description: |
-        #### **Important:** Make sure you have read our [AI policy](https://desktop-plus.org/ai-policy) before submitting this feature request. Any submissions that violate it may be closed without further discussion.
-      options:
-        - label: I have read and understood the AI policy.
-          required: true
-    validations:
-      required: true
+        Thanks for submitting a bug report! This issue tracker is for [Pickaxe](https://github.com/aanilince/pickaxe). Please search the issue tracker to see if there is an existing issue for the bug you are reporting.
   - type: textarea
     id: the-problem
     attributes:
       label: The problem
       description:
-        Describe the issue you are experiencing with Desktop Plus. Provide a
-        clear and concise description of what you were trying to do and what
-        happened, along with any error messages you encountered.
+        Describe the issue you are experiencing with Pickaxe. Provide a clear
+        and concise description of what you were trying to do and what happened,
+        along with any error messages you encountered.
     validations:
       required: true
   - type: input
@@ -32,7 +21,7 @@ body:
     attributes:
       label: Release version
       description:
-        Open 'Help' -> 'About Desktop Plus' menu item to see the app version.
+        Open 'Help' -> 'About Pickaxe' menu item to see the app version.
     validations:
       required: true
   - type: input
@@ -55,12 +44,12 @@ body:
         3. Scroll down to '....'
         4. See error
   - type: input
-    id: specific-to-desktop-plus
+    id: specific-to-pickaxe
     attributes:
-      label: Specific to Desktop Plus?
+      label: Specific to Pickaxe?
       description:
         Download the [official GitHub Desktop app](https://desktop.github.com).
-        Does the issue also occur there, or is it specific to Desktop Plus?
+        Does the issue also occur there, or is it specific to Pickaxe?
   - type: textarea
     id: logs
     attributes:

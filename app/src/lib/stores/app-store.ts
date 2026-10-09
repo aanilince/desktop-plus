@@ -9334,7 +9334,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         if (match === null) {
           this.emitError(
             new ExternalEditorError(
-              `No suitable editors installed for Desktop Plus to launch. Install ${suggestedExternalEditor.name} for your platform and restart Desktop Plus to try again.`,
+              `No suitable editors installed for Pickaxe to launch. Install ${suggestedExternalEditor.name} for your platform and restart Pickaxe to try again.`,
               { suggestDefaultEditor: true }
             )
           )
@@ -9411,7 +9411,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       if (match === null) {
         this.emitError(
           new ExternalEditorError(
-            `No suitable editors installed for Desktop Plus to launch. Install ${suggestedExternalEditor.name} for your platform and restart Desktop Plus to try again.`,
+            `No suitable editors installed for Pickaxe to launch. Install ${suggestedExternalEditor.name} for your platform and restart Pickaxe to try again.`,
             { suggestDefaultEditor: true }
           )
         )

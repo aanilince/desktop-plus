@@ -74,10 +74,10 @@ import { assertRelocatableSymlinks } from './verify-symlinks'
 // Always use ad-hoc code signing ('-'), even for published builds, to avoid "app is damaged" error.
 // This is the friendliest non-paid option.
 // https://wiki.freepascal.org/Code_Signing_for_macOS#Ad_hoc_signing
-const isDesktopPlus = true
+const isPickaxe = true
 const isPublishableBuild = isPublishable()
 const isDevelopmentBuild = getChannel() === 'development'
-const useAdHocSigning = isDesktopPlus || isDevelopmentBuild
+const useAdHocSigning = isPickaxe || isDevelopmentBuild
 const shouldSkipPackaging = process.env.DESKTOP_SKIP_PACKAGE === '1'
 const isOfflineBuild = process.env.OFFLINE === '1'
 
@@ -539,7 +539,7 @@ function generateLicenseMetadata(outRoot: string) {
   )
 
   const licenseText = readFileSync(chooseALicenseLicense, 'utf8')
-  const licenseWithHeader = `Desktop Plus uses licensing information provided by choosealicense.com.
+  const licenseWithHeader = `Pickaxe uses licensing information provided by choosealicense.com.
 
 The bundle in available-licenses.json has been generated from a source list provided at https://github.com/github/choosealicense.com, which is made available under the below license:
 

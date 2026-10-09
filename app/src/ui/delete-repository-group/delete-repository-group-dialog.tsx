@@ -60,8 +60,8 @@ export class DeleteRepositoryGroup extends React.Component<
             <Checkbox
               label={
                 __DARWIN__
-                  ? `Also Remove These Repositories From Desktop Plus`
-                  : `Also remove these repositories from Desktop Plus`
+                  ? `Also Remove These Repositories From Pickaxe`
+                  : `Also remove these repositories from Pickaxe`
               }
               value={
                 this.state.removeRepositories

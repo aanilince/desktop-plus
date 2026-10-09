@@ -449,7 +449,7 @@ export function getDescriptionForError(
   stderr: string
 ): string | null {
   if (isAuthFailureError(error)) {
-    const menuHint = __DARWIN__ ? 'Desktop Plus > Settings.' : 'File > Options.'
+    const menuHint = __DARWIN__ ? 'Pickaxe > Settings.' : 'File > Options.'
     return `Authentication failed. Some common reasons include:
 
 - You are not logged in to your account: see ${menuHint}
@@ -533,7 +533,7 @@ export function getDescriptionForError(
     case DugiteError.CannotMergeUnrelatedHistories:
       return 'Unable to merge unrelated histories in this repository.'
     case DugiteError.PushWithPrivateEmail:
-      return 'Cannot push these commits as they contain an email address marked as private on GitHub. To push anyway, visit https://github.com/settings/emails, uncheck "Keep my email address private", then switch back to Desktop Plus to push your commits. You can then enable the setting again.'
+      return 'Cannot push these commits as they contain an email address marked as private on GitHub. To push anyway, visit https://github.com/settings/emails, uncheck "Keep my email address private", then switch back to Pickaxe to push your commits. You can then enable the setting again.'
     case DugiteError.LFSAttributeDoesNotMatch:
       return 'Git LFS attribute found in global Git configuration does not match expected value.'
     case DugiteError.ProtectedBranchDeleteRejected:

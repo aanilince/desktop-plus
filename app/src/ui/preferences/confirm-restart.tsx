@@ -28,7 +28,7 @@ export class ConfirmRestart extends React.Component<IConfirmRestartProps> {
         type="warning"
       >
         <DialogContent>
-          <p>Restart Desktop Plus to apply the title bar settings change?</p>
+          <p>Restart Pickaxe to apply the title bar settings change?</p>
         </DialogContent>
         {this.renderFooter()}
       </Dialog>

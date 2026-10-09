@@ -6,7 +6,7 @@ import { Button } from './button'
 
 /** Text to let the user know their browser will send them back to GH Desktop */
 export const BrowserRedirectMessage =
-  "Your browser will redirect you back to Desktop Plus once you've signed in. If your browser asks for your permission to launch Desktop Plus please allow it to."
+  "Your browser will redirect you back to Pickaxe once you've signed in. If your browser asks for your permission to launch Pickaxe please allow it to."
 
 interface IAuthenticationFormProps {
   /**

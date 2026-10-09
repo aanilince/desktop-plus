@@ -55,10 +55,12 @@ corepack yarn package       # zip / installer in dist/
 - **Windows / Linux:** the same commands produce an installer, `.deb`, `.rpm` or AppImage. These are built by the upstream CI but have not been tested on this fork.
 - **Updating:** there is no auto-update. `git pull`, then build and install again.
 
-### Known limitations
+### Good to know
 
-- The app still has Desktop Plus's identity (name, bundle id, data folder), so it **replaces an installed Desktop Plus and shares its settings**. Don't install both.
-- Signing in with GitHub uses the OAuth credentials bundled in the source for development builds. To use your own OAuth app, set `DESKTOP_OAUTH_CLIENT_ID` and `DESKTOP_OAUTH_CLIENT_SECRET` when building.
+- Pickaxe has its own app name, identifier and settings folder, so it can be installed **next to** Desktop Plus or GitHub Desktop. On its first launch it copies the settings of an existing GitHub Desktop installation, if there is one.
+- The icon and logos are still Desktop Plus's.
+- Signing in with GitHub uses the OAuth credentials bundled in the source for development builds, and the sign-in redirect page is hosted by Desktop Plus (`desktop-plus.org/oauth`), which this project doesn't control. To use your own OAuth app, set `DESKTOP_OAUTH_CLIENT_ID` and `DESKTOP_OAUTH_CLIENT_SECRET` when building and change the redirect in `app/src/lib/api.ts`. Local repositories don't need you to sign in.
+- The Linux and Windows packages are named after Pickaxe like the macOS one, but only the macOS build has been run on this fork.
 
 ## Development
 

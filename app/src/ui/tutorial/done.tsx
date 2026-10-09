@@ -62,8 +62,8 @@ export class TutorialDone extends React.Component<ITutorialDoneProps, {}> {
             <div className="text">
               <h1 ref={this.header}>You're done!</h1>
               <p>
-                You’ve learned the basics on how to use Desktop Plus. Here are
-                some suggestions for what to do next.
+                You’ve learned the basics on how to use Pickaxe. Here are some
+                suggestions for what to do next.
               </p>
             </div>
             <img
@@ -95,7 +95,7 @@ export class TutorialDone extends React.Component<ITutorialDoneProps, {}> {
             />
             <SuggestedAction
               title="Add a local repository"
-              description="Work on an existing project in Desktop Plus"
+              description="Work on an existing project in Pickaxe"
               buttonText={__DARWIN__ ? 'Add Repository' : 'Add repository'}
               icon={octicons.fileDirectory}
               onClick={this.onAddExistingRepository}

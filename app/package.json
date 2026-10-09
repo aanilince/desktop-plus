@@ -1,21 +1,21 @@
 {
   "$NOTE": "NOTE: Do not edit the 'version' field, as that will cause merge conflicts with upstream. The version is set using env.APP_VERSION.",
-  "name": "desktop-plus",
-  "desktopName": "desktop-plus.desktop",
-  "productName": "Desktop Plus",
-  "bundleID": "org.desktop-plus.DesktopPlus",
-  "companyName": "Desktop Plus",
+  "name": "pickaxe",
+  "desktopName": "pickaxe.desktop",
+  "productName": "Pickaxe",
+  "bundleID": "io.github.aanilince.Pickaxe",
+  "companyName": "Pickaxe",
   "version": "3.6.7-beta2",
   "main": "./main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/desktop-plus/desktop-plus.git"
+    "url": "https://github.com/aanilince/pickaxe.git"
   },
   "description": "Simple collaboration from your desktop",
   "author": {
-    "name": "Desktop Plus",
-    "email": "admin@desktop-plus.org",
-    "url": "https://desktop-plus.org/"
+    "name": "Pickaxe",
+    "email": "admin@pickaxe.org",
+    "url": "https://pickaxe.org/"
   },
   "license": "MIT",
   "dependencies": {

@@ -53,10 +53,10 @@ describe('tutorial welcome surfaces', () => {
       image => image.getAttribute('alt')
     )
 
-    assert.ok(screen.getByText('Welcome to Desktop Plus'))
+    assert.ok(screen.getByText('Welcome to Pickaxe'))
     assert.ok(
       screen.getByText(
-        'Use this tutorial to get comfortable with Git, GitHub, and Desktop Plus.'
+        'Use this tutorial to get comfortable with Git, GitHub, and Pickaxe.'
       )
     )
     assert.equal(definitions.length, 3)

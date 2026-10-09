@@ -6,8 +6,8 @@ import { Loading } from '../lib/loading'
 import { LinkButton } from '../lib/link-button'
 import { Dialog, DialogContent, DefaultDialogFooter } from '../dialog'
 
-const WebsiteURL = 'https://desktop-plus.org'
-const RepositoryURL = 'https://github.com/desktop-plus/desktop-plus'
+const DesktopPlusURL = 'https://github.com/desktop-plus/desktop-plus'
+const RepositoryURL = 'https://github.com/aanilince/pickaxe'
 
 interface IAcknowledgementsProps {
   /** The function to call when the dialog should be dismissed. */
@@ -121,15 +121,16 @@ export class Acknowledgements extends React.Component<
       >
         <DialogContent>
           <p>
-            <LinkButton uri={WebsiteURL}>Desktop Plus</LinkButton> is an open
-            source project published under the MIT License. You can view the
-            source code and contribute to this project on{' '}
+            <LinkButton uri={RepositoryURL}>Pickaxe</LinkButton> is an open
+            source project published under the MIT License, a fork of{' '}
+            <LinkButton uri={DesktopPlusURL}>Desktop Plus</LinkButton>. You can
+            view the source code and contribute to this project on{' '}
             <LinkButton uri={RepositoryURL}>GitHub</LinkButton>.
           </p>
 
           {desktopLicense}
 
-          <p>Desktop Plus also distributes these libraries:</p>
+          <p>Pickaxe also distributes these libraries:</p>
 
           {licenses ? this.renderLicenses(licenses) : <Loading />}
         </DialogContent>

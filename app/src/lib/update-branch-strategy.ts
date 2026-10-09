@@ -1,5 +1,5 @@
 /**
- * The strategy used by Desktop Plus' "Update from …" action.
+ * The strategy used by Pickaxe' "Update from …" action.
  *
  * This is intentionally separate from Git's `pull.rebase`: updating from a
  * contribution target is not a `git pull`, and changing this setting should

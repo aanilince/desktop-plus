@@ -12,10 +12,7 @@ import { IUpdateState, UpdateStatus } from '../lib/update-store'
 import { Loading } from '../lib/loading'
 import { RelativeTime } from '../relative-time'
 import { assertNever } from '../../lib/fatal-error'
-import {
-  DesktopPlusReleaseNotesUri,
-  UpstreamReleaseNotesUri,
-} from '../lib/releases'
+import { ReleaseNotesUri, UpstreamReleaseNotesUri } from '../lib/releases'
 import { encodePathAsUrl } from '../../lib/path'
 import { isOSNoLongerSupportedByElectron } from '../../lib/get-os'
 import { AriaLiveContainer } from '../accessibility/aria-live-container'
@@ -95,9 +92,7 @@ export class About extends React.Component<IAboutProps> {
     return (
       <Row>
         <p className="no-padding">
-          <LinkButton uri={DesktopPlusReleaseNotesUri}>
-            Desktop Plus Releases
-          </LinkButton>
+          <LinkButton uri={ReleaseNotesUri}>Pickaxe Releases</LinkButton>
           <span className="separator">|</span>
           <LinkButton uri={UpstreamReleaseNotesUri}>
             Upstream Releases
@@ -111,7 +106,7 @@ export class About extends React.Component<IAboutProps> {
     if (__LINUX__) {
       return (
         <p>
-          Please visit the Desktop Plus release page for release notes and to
+          Please visit the Pickaxe release page for release notes and to
           download the latest version.
         </p>
       )
@@ -199,7 +194,7 @@ export class About extends React.Component<IAboutProps> {
     const name = this.props.applicationName
     const version = this.props.applicationVersion
     const releaseNotesLink = (
-      <LinkButton uri={DesktopPlusReleaseNotesUri}>release notes</LinkButton>
+      <LinkButton uri={ReleaseNotesUri}>release notes</LinkButton>
     )
 
     const versionText = __DEV__ ? `Build ${version}` : `Version ${version}`
@@ -215,7 +210,7 @@ export class About extends React.Component<IAboutProps> {
         {this.renderUpdateErrors()}
         <DialogContent>
           <Row className="logo">
-            <img src={DesktopLogo} alt="Desktop Plus" width="64" height="64" />
+            <img src={DesktopLogo} alt="Pickaxe" width="64" height="64" />
           </Row>
           <h1 id={titleId}>About {name}</h1>
           <p className="no-padding">
@@ -240,7 +235,7 @@ export class About extends React.Component<IAboutProps> {
             </p>
             <p className="terms-and-license">
               <LinkButton uri="https://gh.io/copilot-for-desktop-transparency">
-                Responsible use of Copilot in Desktop Plus
+                Responsible use of Copilot in Pickaxe
               </LinkButton>
             </p>
           </div>

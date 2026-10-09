@@ -10,14 +10,14 @@ else
 		INSTALL_PATH=$(dirname "$(dirname "$(dirname "$(dirname "$SYMLINK")")")")
 	else
 		# else use the standard install location
-		INSTALL_PATH="/opt/Desktop Plus"
+		INSTALL_PATH="/opt/Pickaxe"
 	fi
 fi
 # check if this is a dev install or standard
-if [ -f "$INSTALL_PATH/desktop-plus-dev" ]; then
-	BINARY_NAME="desktop-plus-dev"
+if [ -f "$INSTALL_PATH/pickaxe-dev" ]; then
+	BINARY_NAME="pickaxe-dev"
 else
-	BINARY_NAME="desktop-plus"
+	BINARY_NAME="pickaxe"
 fi
 
 ELECTRON="$INSTALL_PATH/$BINARY_NAME"

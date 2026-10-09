@@ -296,9 +296,9 @@ jobs:
       - name: Install app on macOS
         if: runner.os == 'macOS'
         run: |
-          rm -rf "/Applications/Desktop Plus.app"
-          ditto "dist/Desktop Plus-darwin-arm64/Desktop Plus.app" "/Applications/Desktop Plus.app"
-          echo "DESKTOP_E2E_APP_PATH=/Applications/Desktop Plus.app/Contents/MacOS/Desktop Plus" >> "$GITHUB_ENV"
+          rm -rf "/Applications/Pickaxe.app"
+          ditto "dist/Pickaxe-darwin-arm64/Pickaxe.app" "/Applications/Pickaxe.app"
+          echo "DESKTOP_E2E_APP_PATH=/Applications/Pickaxe.app/Contents/MacOS/Pickaxe" >> "$GITHUB_ENV"
       - name: Install app on Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -306,7 +306,7 @@ jobs:
           function Write-SquirrelLogs {
             $logPaths = @(
               "$env:LOCALAPPDATA\SquirrelSetup.log",
-              "$env:LOCALAPPDATA\DesktopPlus\SquirrelSetup.log"
+              "$env:LOCALAPPDATA\Pickaxe\SquirrelSetup.log"
             )
 
             foreach ($logPath in $logPaths) {
@@ -317,7 +317,7 @@ jobs:
             }
           }
 
-          $setupExe = Get-ChildItem "dist/DesktopPlus-*-windows-${{ matrix.arch }}.exe" -ErrorAction SilentlyContinue |
+          $setupExe = Get-ChildItem "dist/Pickaxe-*-windows-${{ matrix.arch }}.exe" -ErrorAction SilentlyContinue |
             Sort-Object FullName -Descending |
             Select-Object -First 1 -ExpandProperty FullName
 
@@ -334,11 +334,11 @@ jobs:
             throw "Windows installer timed out after 300 seconds"
           }
 
-          Get-Process DesktopPlus -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-Process Pickaxe -ErrorAction SilentlyContinue | Stop-Process -Force
 
           $installedExe = $null
           for ($attempt = 0; $attempt -lt 30 -and -not $installedExe; $attempt++) {
-            $installedExe = Get-ChildItem "$env:LOCALAPPDATA\DesktopPlus\app-*\DesktopPlus.exe" -ErrorAction SilentlyContinue |
+            $installedExe = Get-ChildItem "$env:LOCALAPPDATA\Pickaxe\app-*\Pickaxe.exe" -ErrorAction SilentlyContinue |
               Sort-Object FullName -Descending |
               Select-Object -First 1 -ExpandProperty FullName
 
@@ -349,7 +349,7 @@ jobs:
 
           if (-not $installedExe) {
             Write-SquirrelLogs
-            throw "Unable to locate installed Desktop Plus executable"
+            throw "Unable to locate installed Pickaxe executable"
           }
 
           Add-Content -Path $env:GITHUB_ENV -Value "DESKTOP_E2E_APP_PATH=$installedExe"
@@ -400,7 +400,7 @@ jobs:
       - name: Collect unsigned installers
         run: |
           mkdir unsigned
-          cp artifacts/Windows-*/DesktopPlus-*.exe artifacts/Windows-*/DesktopPlus-*.msi unsigned/
+          cp artifacts/Windows-*/Pickaxe-*.exe artifacts/Windows-*/Pickaxe-*.msi unsigned/
           ls -l unsigned
 
       - name: Upload unsigned installers
@@ -467,7 +467,7 @@ jobs:
       - name: Replace unsigned installers with signed ones
         run: |
           for arch in x64 arm64; do
-            cp signed/DesktopPlus-*-windows-$arch.exe signed/DesktopPlus-*-windows-$arch.msi artifacts/Windows-$arch/
+            cp signed/Pickaxe-*-windows-$arch.exe signed/Pickaxe-*-windows-$arch.msi artifacts/Windows-$arch/
           done
 
       # Overwrite the build artifacts so that the release jobs pick up the
@@ -528,13 +528,13 @@ jobs:
           name: ${{ steps.release_notes.outputs.title }}
           body: ${{ steps.release_notes.outputs.body }}
           files: |
-            artifacts/**/DesktopPlus-*.AppImage
-            artifacts/**/DesktopPlus-*.AppImage.zsync
-            artifacts/**/DesktopPlus-*.deb
-            artifacts/**/DesktopPlus-*.rpm
-            artifacts/**/DesktopPlus-*.exe
-            artifacts/**/DesktopPlus-*.msi
-            artifacts/**/DesktopPlus-*.zip
+            artifacts/**/Pickaxe-*.AppImage
+            artifacts/**/Pickaxe-*.AppImage.zsync
+            artifacts/**/Pickaxe-*.deb
+            artifacts/**/Pickaxe-*.rpm
+            artifacts/**/Pickaxe-*.exe
+            artifacts/**/Pickaxe-*.msi
+            artifacts/**/Pickaxe-*.zip
           draft: false
           fail_on_unmatched_files: true
         env:
@@ -828,7 +828,7 @@ jobs:
       - name: Publish to winget
         uses: vedantmgoyal9/winget-releaser@b3a5dae0047c6180023acba3f548c55fdf6b7193
         with:
-          identifier: DesktopPlus.DesktopPlus
+          identifier: Pickaxe.Pickaxe
           version:
             ${{ needs.compute_version.outputs.SEMVER_COMPATIBLE_VERSION }}
           installers-regex: '\.exe$'

@@ -74,8 +74,8 @@ export class InstallingUpdate extends React.Component<IInstallingUpdateProps> {
       >
         <DialogContent>
           <Row className="updating-message">
-            Do not close Desktop Plus while the update is in progress. Closing
-            now may break your installation.
+            Do not close Pickaxe while the update is in progress. Closing now
+            may break your installation.
           </Row>
         </DialogContent>
         <DialogFooter>

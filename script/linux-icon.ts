@@ -1,8 +1,8 @@
 import { join } from 'path'
 
-// Icon is named "gh-desktop-plus" rather than "desktop-plus" to avoid the freedesktop dash-stripping fallback
+// Icon is named "gh-pickaxe" rather than "pickaxe" to avoid the freedesktop dash-stripping fallback
 // ('desktop' exists in many icon themes, so that icon would be used instead of ours).
-export const LINUX_ICON_NAME = 'gh-desktop-plus'
+export const LINUX_ICON_NAME = 'gh-pickaxe'
 
 // electron-installer-common derives the installed hicolor icon filename from the
 // package name (`appIdentifier`, which is just `options.name`). We want the icons

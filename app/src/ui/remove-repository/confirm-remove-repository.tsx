@@ -67,10 +67,10 @@ export class ConfirmRemoveRepository extends React.Component<
         <DialogContent>
           <p>
             Are you sure you want to remove the repository "
-            {this.props.repository.name}" from Desktop Plus?
+            {this.props.repository.name}" from Pickaxe?
           </p>
           <div className="description">
-            <p>The repository will be removed from Desktop Plus:</p>
+            <p>The repository will be removed from Pickaxe:</p>
             <p>
               <Ref>{this.props.repository.path}</Ref>
             </p>

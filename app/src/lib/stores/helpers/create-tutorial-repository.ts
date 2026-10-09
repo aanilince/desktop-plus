@@ -16,11 +16,11 @@ import { pathExists } from '../../path-exists'
 
 const nl = __WIN32__ ? '\r\n' : '\n'
 const InitialReadmeContents =
-  `# Welcome to Desktop Plus!${nl}${nl}` +
+  `# Welcome to Pickaxe!${nl}${nl}` +
   `This is your README. READMEs are where you can communicate ` +
   `what your project is and how to use it.${nl}${nl}` +
   `Write your name on line 6, save it, and then head ` +
-  `back to Desktop Plus.${nl}`
+  `back to Pickaxe.${nl}`
 
 async function createAPIRepository(account: Account, name: string) {
   const api = new API(account.endpoint, account.token, account.login)
@@ -29,7 +29,7 @@ async function createAPIRepository(account: Account, name: string) {
     return await api.createRepository(
       null,
       name,
-      'Desktop Plus tutorial repository',
+      'Pickaxe tutorial repository',
       true
     )
   } catch (err) {

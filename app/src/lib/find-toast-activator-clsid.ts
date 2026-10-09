@@ -16,10 +16,10 @@ export function findToastActivatorClsid() {
       'Windows',
       'Start Menu',
       'Programs',
-      'Desktop Plus',
-      'Desktop Plus.lnk'
+      'Pickaxe',
+      'Pickaxe.lnk'
     ),
-    path.join(os.homedir(), 'Desktop', 'Desktop Plus.lnk'),
+    path.join(os.homedir(), 'Desktop', 'Pickaxe.lnk'),
   ]
 
   for (const shortcutPath of shortcutPaths) {

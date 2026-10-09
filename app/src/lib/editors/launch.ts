@@ -52,7 +52,7 @@ async function launchEditor(
     )
     throw new ExternalEditorError(
       e && typeof e === 'object' && 'code' in e && e.code === 'EACCES'
-        ? `Desktop Plus doesn't have the proper permissions to start ${editorName}. Please open ${label} and try another editor.`
+        ? `Pickaxe doesn't have the proper permissions to start ${editorName}. Please open ${label} and try another editor.`
         : `Something went wrong while trying to start ${editorName}. Please open ${label} and try another editor.`,
       { openPreferences: true }
     )

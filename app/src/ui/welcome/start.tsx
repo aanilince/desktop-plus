@@ -29,19 +29,19 @@ export class Start extends React.Component<IStartProps, {}> {
     return (
       <section
         id="start"
-        aria-label="Welcome to Desktop Plus"
+        aria-label="Welcome to Pickaxe"
         aria-describedby="start-description"
       >
         <div className="start-content">
           <h1 className="welcome-title">
-            Welcome to <span>Desktop Plus</span>
+            Welcome to <span>Pickaxe</span>
           </h1>
           {!this.props.loadingBrowserAuth ? (
             <>
               <p id="start-description" className="welcome-text">
-                Desktop Plus is a seamless way to contribute to projects on
-                GitHub and other platforms. Sign in below to get started with
-                your existing projects.
+                Pickaxe is a seamless way to contribute to projects on GitHub
+                and other platforms. Sign in below to get started with your
+                existing projects.
               </p>
             </>
           ) : (

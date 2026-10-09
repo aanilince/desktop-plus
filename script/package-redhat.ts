@@ -65,15 +65,15 @@ const options: RedhatOptions = {
   dest: distRoot,
   arch: getArchitecture(),
   version: getVersion(),
-  name: 'desktop-plus',
+  name: 'pickaxe',
   description:
     'GitHub Desktop fork with advanced functionality and improvements.',
-  productName: 'Desktop Plus',
+  productName: 'Pickaxe',
   productDescription:
     'GitHub Desktop fork with advanced functionality and improvements.',
   genericName: 'Git Client',
   categories: ['Development', 'GitHub'],
-  homepage: 'https://desktop-plus.org',
+  homepage: 'https://pickaxe.org',
   requires: [
     // dugite-native dependencies
     '(libcurl or libcurl4)',
@@ -121,12 +121,12 @@ export async function packageRedhat(): Promise<string> {
     await originalCreateSpec.call(this)
     let specContent: string = await readFile(this.specPath, 'utf8')
 
-    // The RPM package was renamed from "github-desktop-plus" to "desktop-plus".
+    // The RPM package was renamed from "github-pickaxe" to "pickaxe".
     // Declaring Obsoletes/Provides for the old name makes `dnf upgrade` migrate
     // existing users by replacing the old package with this one.
     const renameDirectives =
-      'Provides: github-desktop-plus = %{version}-%{release}\n' +
-      'Obsoletes: github-desktop-plus < %{version}-%{release}'
+      'Provides: github-pickaxe = %{version}-%{release}\n' +
+      'Obsoletes: github-pickaxe < %{version}-%{release}'
     specContent = specContent.replace(
       /^Requires:.*$/m,
       match => `${match}\n${renameDirectives}`
@@ -162,7 +162,7 @@ export async function packageRedhat(): Promise<string> {
     Installer.prototype.createSpec = originalCreateSpec
     restoreIconName()
   }
-  const installersPath = `${distRoot}/desktop-plus*.rpm`
+  const installersPath = `${distRoot}/pickaxe*.rpm`
 
   const files = await globPromise(installersPath)
 
@@ -174,7 +174,7 @@ export async function packageRedhat(): Promise<string> {
 
   const oldPath = files[0]
 
-  const newFileName = `DesktopPlus-v${getVersion()}-linux-${getArchitectureForFileName()}.rpm`
+  const newFileName = `Pickaxe-v${getVersion()}-linux-${getArchitectureForFileName()}.rpm`
   const newPath = join(distRoot, newFileName)
   await rename(oldPath, newPath)
 

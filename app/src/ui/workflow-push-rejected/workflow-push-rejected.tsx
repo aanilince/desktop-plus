@@ -44,11 +44,11 @@ export class WorkflowPushRejectedDialog extends React.Component<
           <p>
             The push was rejected by the server for containing a modification to
             the workflow file <Ref>{this.props.rejectedPath}</Ref>. In order to
-            be able to push to workflow files Desktop Plus needs to request
+            be able to push to workflow files Pickaxe needs to request
             additional permissions.
           </p>
           <p>
-            Would you like to open a browser to grant Desktop Plus permission to
+            Would you like to open a browser to grant Pickaxe permission to
             update workflow files?
           </p>
         </DialogContent>
